@@ -1,0 +1,4393 @@
+
+# Hotel Management System - v0.dev Specification
+
+## Overview
+
+This document provides a comprehensive specification for a Hotel Management System built with Next.js. The system features a modern, responsive interface with a dark sidebar navigation, clean white content area, and consistent UI components throughout.
+
+## Global Design System
+
+### Colors
+- Primary: #9b87f5 (purple)
+- Secondary: #7E69AB (darker purple)
+- Dark: #1A1F2C (sidebar background)
+- Light Purple: #D6BCFA
+- Vivid Purple: #8B5CF6
+- Accent Orange: #F97316
+- Accent Blue: #0EA5E9
+- White: #FFFFFF
+- Dark Text: #222222
+- Error: #ea384c
+- Success: #10B981
+- Warning: #F59E0B
+- Info: #3B82F6
+- Muted: #6B7280
+- Border: #E2E8F0
+- Background: #F7F9FC
+
+### Typography
+- Font Family: Inter, system-ui, sans-serif
+- Heading sizes:
+  - h1: 1.875rem (30px), font-weight: 700
+  - h2: 1.5rem (24px), font-weight: 700
+  - h3: 1.25rem (20px), font-weight: 600
+  - h4: 1.125rem (18px), font-weight: 600
+- Body text: 0.875rem (14px) to 1rem (16px), font-weight: 400
+- Small text: 0.75rem (12px), font-weight: 400
+- Line heights: 1.5 to 1.7 for body text
+
+### Spacing
+- Base unit: 4px
+- Common spacings: 4px, 8px, 12px, 16px, 24px, 32px, 48px, 64px
+- Page padding: 24px on desktop, 16px on mobile
+- Section spacing: 24px to 48px between major sections
+
+### Shadows
+- Card shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)
+- Dropdown shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)
+- Modal shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)
+
+### Border Radius
+- Small: 4px (inputs, buttons)
+- Medium: 8px (cards, modals)
+- Large: 12px (sidebar, larger cards)
+- Full: 9999px (avatars, pills)
+
+### Animations
+- Transitions: 0.2s ease-in-out for hover states
+- Page transitions: fade in (0.3s ease-out)
+- Loading spinners: rotating animation (1s linear infinite)
+
+## Layout Structure
+
+### Main Layout
+- Fixed sidebar on the left (width: 280px, collapsible to 80px)
+- Header at the top (height: 64px)
+- Main content area with padding
+- Responsive breakpoints:
+  - Mobile: < 640px (sidebar hidden, toggle with menu button)
+  - Tablet: 640px - 1024px
+  - Desktop: > 1024px
+
+### Sidebar
+- Dark background (#1A1F2C)
+- White text and icons
+- Active item highlighted with left accent bar and lighter background
+- Icon + Text structure for each menu item
+- Collapsible with hamburger icon in header
+- Fixed position on desktop, sliding/overlay on mobile
+- Height: 100vh
+- Width: 280px (expanded), 80px (collapsed)
+- Logo at top (height: 40px)
+- Navigation items:
+  - Dashboard
+  - Bookings
+  - Rooms
+  - Expenses
+  - Users
+  - Owners
+  - Reports
+  - Audit Logs
+  - Settings
+- Each navigation item has:
+  - Icon (from Lucide React)
+  - Text label
+  - Active state styling (left border accent, lighter background)
+  - Hover effect (slightly lighter background)
+
+### Header
+- White background
+- Shadow for subtle elevation
+- Height: 64px
+- Contains: 
+  - Hamburger menu for sidebar toggle (on left)
+  - Search bar (expandable on mobile, center on desktop)
+  - Notification bell icon with badge (on right)
+  - Profile avatar with dropdown (on right)
+  - Border-bottom: 1px solid #E2E8F0
+
+### Content Area
+- White background
+- Padding: 24px
+- Max-width: 1400px (centered on very wide screens)
+- Contains page title, breadcrumbs, and page-specific content
+
+## Common Components
+
+### Button Component
+- Variants:
+  - Primary: Purple background (#9b87f5), white text
+  - Secondary: White background, purple border, purple text
+  - Outline: Transparent background, gray border, dark text
+  - Ghost: Transparent background, no border, dark text
+  - Destructive: Red background (#ea384c), white text
+- Sizes:
+  - Small: padding 8px 12px, text 14px
+  - Medium (default): padding 10px 16px, text 14px
+  - Large: padding 12px 20px, text 16px
+- States:
+  - Default
+  - Hover: Slightly darker shade
+  - Focus: Ring outline (2px, lighter shade of button color)
+  - Disabled: Reduced opacity (0.6), no hover effect
+  - Loading: Spinner icon, text faded
+- Border radius: 6px
+- Sometimes contains icon + text
+- Shadow: very subtle on primary buttons
+- Transitions: 0.2s ease for color and background changes
+
+### Card Component
+- White background
+- Border: 1px solid #E2E8F0
+- Border radius: 8px
+- Shadow: 0 1px 3px rgba(0, 0, 0, 0.1)
+- Padding: 16px to 24px
+- Header section with title and optional actions
+- Content section
+- Footer section (optional)
+- Hover state: slight elevation increase (optional)
+
+### Form Inputs
+- Height: 40px (standard), 32px (small), 48px (large)
+- Border: 1px solid #CBD5E0
+- Border radius: 6px
+- Padding: 8px 12px
+- Focus state: Border color change to primary color, light shadow
+- Error state: Red border, error message below
+- Label position: Above input, 12px margin-bottom
+- Font size: 14px for input text
+- Placeholder color: #A0AEC0
+- Background: White
+- Text color: #222222
+- Disabled state: Light gray background, reduced opacity
+
+### Table Component
+- Header row with slightly darker background (#F9FAFB)
+- Border: 1px solid #E2E8F0
+- Cell padding: 12px 16px
+- Alternating row background (optional): #F9FAFB
+- Hover effect on rows: Background change to very light purple
+- Sortable columns with indicator icons
+- Responsive: Horizontal scroll on small screens
+- Row height: 56px
+- Header font weight: 600
+- Border-collapse: separate
+- Border-spacing: 0
+
+### Badge Component
+- Small pill or rectangle
+- Border radius: 9999px (pill) or 4px (rectangle)
+- Font size: 12px
+- Padding: 2px 8px
+- Color variants:
+  - Green (success, available): #10B981 background, white text
+  - Red (error, booked): #EF4444 background, white text
+  - Yellow (warning, maintenance): #F59E0B background, white text
+  - Blue (info): #3B82F6 background, white text
+  - Gray (default): #6B7280 background, white text
+  - Purple (primary): #9b87f5 background, white text
+- Border: 1px solid (slightly darker shade of background)
+- Font weight: 500
+- Display: inline-flex with items center
+
+### Alert/Toast Component
+- Position: Bottom right corner
+- Animation: Slide in from right
+- Auto dismiss after 5 seconds (configurable)
+- Types:
+  - Success: Green background, white text
+  - Error: Red background, white text
+  - Warning: Yellow background, dark text
+  - Info: Blue background, white text
+- Border radius: 6px
+- Shadow: Medium elevation
+- Contains icon, message, and dismiss button
+- Max width: 400px
+- Padding: 12px 16px
+- Z-index: 50 (above most content)
+
+### Modal Component
+- Backdrop: Semi-transparent black (rgba(0,0,0,0.5))
+- White background
+- Border radius: 8px
+- Shadow: High elevation
+- Header with title and close button
+- Body content with appropriate padding
+- Footer with action buttons
+- Animation: Fade in and slight scale up
+- Max width: Varies by content (typically 500px-800px)
+- Centers on screen
+- Scrollable body when content is tall
+- Z-index: 100 (above everything)
+- Padding: 24px (can vary by section)
+
+### Dropdown Component
+- Trigger element (button or custom component)
+- Dropdown menu with white background
+- Border: 1px solid #E2E8F0
+- Border radius: 6px
+- Shadow: Medium elevation
+- Item padding: 8px 12px
+- Hover effect on items: Light gray background
+- Animation: Fade in and slight shift down
+- Position: Below trigger, aligned to left or right edge
+- Min-width: Same as trigger
+- Max-height: Varies, often with scroll
+- Z-index: 40
+
+### Tabs Component
+- Tab list with inline tabs
+- Active tab: Border bottom (2-3px solid primary color)
+- Inactive tabs: Gray text
+- Hover effect: Slightly darker text
+- Padding: 12px 16px for each tab
+- Content area below tabs
+- Animation: Fade between tab contents
+- Border-bottom on tab list: 1px solid #E2E8F0
+- Content padding: 16px 0
+
+### Pagination Component
+- Current page indicator
+- Previous/Next buttons
+- Page number buttons
+- Ellipsis for skipped page numbers
+- Border radius: 6px
+- Active page: Primary color background, white text
+- Inactive pages: White background, dark text
+- Hover effect: Light gray background
+- Disabled state for Previous/Next when at first/last page
+- Button size: 32px by 32px
+- Gap between buttons: 4px
+- Text size: 14px
+
+## Pages Detail
+
+### Dashboard Page
+- **Route**: / (home)
+- **Layout**:
+  - Full width content area
+  - Multiple card sections arranged in grid layout
+  - Responsive grid that stacks on mobile
+
+- **Stats Section**:
+  - Four card stats in a row (2x2 grid on tablet)
+  - Each stat card:
+    - White background
+    - Border radius: 8px
+    - Padding: 16px
+    - Shadow: Low elevation
+    - Icon on the left (colored)
+    - Value in large font (24px, bold)
+    - Label in smaller font (14px, medium)
+    - Optional trend indicator (+/-%)
+    - Height: 100px
+  - Stats displayed:
+    - Available Rooms (Icon: BedDouble from Lucide)
+    - Today's Check-ins (Icon: ArrowDownToLine from Lucide)
+    - Today's Check-outs (Icon: ArrowUpFromLine from Lucide)
+    - Occupancy Rate (Icon: Percent from Lucide)
+  - Animation: Slide up with staggered delay
+  - Gap between cards: 16px
+
+- **Chart and Quick Actions**:
+  - Grid layout: 2/3 for chart, 1/3 for quick actions (stacks on mobile)
+  - Chart card:
+    - Title: "Occupancy & Revenue"
+    - Toggle between weekly/monthly view
+    - Line chart using Recharts library
+    - Two lines: occupancy rate (blue) and revenue (purple)
+    - Tooltip on hover showing exact values
+    - X-axis: Days or Months
+    - Y-axis: Percentage (left), Amount (right)
+    - Height: 320px
+    - Legend showing both metrics
+    - Chart grid lines: light gray dotted
+  - Quick actions card:
+    - Title: "Quick Actions"
+    - Grid of button shortcuts:
+      - Add Booking (Icon: Plus)
+      - Add Room (Icon: Home)
+      - View Availability (Icon: Calendar)
+      - Run Reports (Icon: BarChart)
+    - Each button:
+      - Icon + Text
+      - Outline style
+      - Equal width/height
+      - Hover: Light background
+      - Border radius: 6px
+      - Padding: 12px
+
+- **Today's Activity Section**:
+  - Title: "Today's Activity"
+  - Tabs: "Check-ins" and "Check-outs"
+  - List of bookings for today:
+    - Guest name with avatar
+    - Room number and type
+    - Time of check-in/check-out
+    - Status badge
+    - Action button
+  - Empty state: "No check-ins/check-outs today"
+  - Max height: 300px with scroll
+  - Card styling consistent with other cards
+  - Border-radius: 8px
+  - Shadow: Low elevation
+  - List items:
+    - Padding: 12px 16px
+    - Border-bottom: 1px solid #E2E8F0
+    - Hover: Light background
+    - Last item no border
+
+- **Recent Bookings**:
+  - Title: "Recent Bookings"
+  - Table showing:
+    - Booking ID
+    - Guest Name
+    - Room
+    - Check-in/out Dates
+    - Status (with colored badge)
+    - Amount
+    - Action button (view)
+  - Pagination at bottom
+  - Link to "View all bookings"
+  - Displays 5 most recent bookings
+  - Card styling consistent with other cards
+  - Table: Full width
+  - Cell padding: 12px 16px
+  - Header background: Light gray
+
+- **Responsive Behavior**:
+  - Desktop: Four columns for stats, 2/3 + 1/3 for chart and actions
+  - Tablet: Two columns for stats, stacked chart and actions
+  - Mobile: Single column layout, all sections stacked
+  - Reduced padding on mobile: 16px
+
+### Bookings Page
+- **Route**: /bookings
+- **Layout**:
+  - Full width content area
+  - Search and filter section at top
+  - Bookings list/table below
+  - Pagination at bottom
+
+- **Page Header**:
+  - Title: "Bookings"
+  - Subtitle: "Manage all your bookings in one place"
+  - "Add New Booking" button (primary style, icon: Plus from Lucide)
+  - Margin bottom: 24px
+  - Display: flex
+  - Justify: space-between
+  - Align: center
+
+- **Search and Filter Section**:
+  - Card with white background
+  - Border: 1px solid #E2E8F0
+  - Border radius: 8px
+  - Padding: 16px
+  - Contains:
+    - Search input (icon: Search from Lucide)
+      - Placeholder: "Search bookings..."
+      - Width: 100% to fit container
+    - Status filter dropdown
+      - Options: All, Confirmed, Checked In, Checked Out, Cancelled, Pending
+      - Label: "Status"
+    - Date range picker (uses react-day-picker)
+      - Format: DD/MM/YYYY - DD/MM/YYYY
+      - Placeholder: "Select date range"
+    - Clear filters button
+  - Flex layout that stacks on mobile
+  - Gap between elements: 16px
+  - Border-radius: 6px for all inputs
+  - Height: 40px for all inputs
+
+- **View Toggle**:
+  - Toggle between List and Grid views
+  - Two button group (List/Grid)
+  - Icon only (LayoutList, LayoutGrid from Lucide)
+  - Position: Above the bookings list, right aligned
+  - Only visible on desktop and tablet
+  - Button size: 32px by 32px
+  - Border: 1px solid #E2E8F0
+  - Border-radius: 4px
+  - Active state: Light background, primary text
+
+- **Bookings List View**:
+  - Table with columns:
+    - Guest Name (sortable)
+    - Room/Property (sortable)
+    - Check-in Date (sortable)
+    - Check-out Date (sortable)
+    - Status (with color-coded badge)
+    - Amount (sortable)
+    - Actions (view, edit, cancel)
+  - Row hover: Light background color
+  - Status badges:
+    - Confirmed: Green
+    - Checked In: Blue
+    - Checked Out: Gray
+    - Cancelled: Red
+    - Pending: Yellow
+  - Action buttons: Icon only, ghost variant
+  - Empty state: "No bookings found"
+  - Table:
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Overflow: hidden
+    - Cell padding: 12px 16px
+    - Header background: #F9FAFB
+    - Row border-top: 1px solid #E2E8F0
+    - First row no border
+
+- **Bookings Grid View**:
+  - Cards in 3-column grid (desktop), 2-column (tablet), 1-column (mobile)
+  - Each card:
+    - Guest name and avatar at top
+    - Room/property
+    - Check-in/out dates
+    - Status badge
+    - Amount
+    - Actions at bottom
+  - Gap between cards: 16px
+  - Card padding: 16px
+  - Hover effect: Slight elevation increase
+  - Card:
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Shadow: Low elevation
+    - Background: White
+    - Height: ~180px
+
+- **Pagination**:
+  - Current page indicator
+  - Previous/Next buttons
+  - Page number buttons (showing 5 pages at a time)
+  - "Showing X-Y of Z results" text
+  - Centered at bottom of page
+  - Margin top: 24px
+  - Button size: 32px by 32px
+  - Active page: Primary background, white text
+  - Inactive page: White background, dark text
+
+- **Responsive Behavior**:
+  - Desktop: Full table/grid with all columns
+  - Tablet: Horizontal scroll for table, 2-column grid
+  - Mobile: Simplified table (fewer columns), 1-column grid
+  - Filters stack vertically on mobile
+
+### Add New Booking Page
+- **Route**: /bookings/new
+- **Layout**:
+  - Full width content area
+  - Form in card container
+
+- **Page Header**:
+  - Title: "Add New Booking"
+  - Back button: Ghost variant with arrow left icon
+  - Margin bottom: 24px
+  - Display: flex
+  - Align: center
+  - Gap: 16px
+
+- **Form Card**:
+  - White background
+  - Border: 1px solid #E2E8F0
+  - Border radius: 8px
+  - Shadow: Low elevation
+  - Padding: 24px
+
+- **Form Layout**:
+  - Two column grid on desktop (stacks on mobile)
+  - Field groups with related inputs
+  - Gap between fields: 16px
+  - Grid template columns: repeat(2, 1fr)
+  - Grid column gap: 24px
+  - Grid row gap: 16px
+
+- **Form Fields**:
+  - All inputs have labels above, placeholder text, and inline validation
+  - Label style: 14px, medium weight, dark text
+  - Input style: Standard form input component
+
+  - **Booking Details Group**:
+    - Booking reference (disabled, auto-generated)
+      - Type: text
+      - Placeholder: "Will be generated automatically"
+      - Disabled: true
+    - Guest section:
+      - Guest name input (required)
+        - Type: text
+        - Placeholder: "Enter guest name"
+      - Guest email input (email validation)
+        - Type: email
+        - Placeholder: "Enter guest email"
+      - Guest phone input (optional)
+        - Type: tel
+        - Placeholder: "Enter guest phone"
+      - "Select Existing Guest" button opens modal
+        - Style: Secondary
+        - Icon: Search
+    - Property/Room section:
+      - Property dropdown (required)
+        - Options: List of available properties
+        - Placeholder: "Select property"
+      - Room dropdown (filtered by property, required)
+        - Options: List of available rooms for selected property
+        - Placeholder: "Select room"
+        - Disabled until property selected
+
+  - **Dates and Guests Group**:
+    - Check-in date picker (required)
+      - Type: date
+      - Format: DD/MM/YYYY
+      - Default: Today
+    - Check-out date picker (required)
+      - Type: date
+      - Format: DD/MM/YYYY
+      - Default: Tomorrow
+      - Min: Check-in date + 1 day
+    - Adults number input (min: 1, default: 2)
+      - Type: number
+      - Min: 1
+      - Max: Based on room capacity
+    - Children number input (min: 0, default: 0)
+      - Type: number
+      - Min: 0
+      - Max: Based on room capacity
+
+  - **Rate Information Group**:
+    - Base rate input (currency, required)
+      - Type: number
+      - Prefix: $
+      - Step: 0.01
+      - Min: 0
+    - Total amount input (calculated, can be overridden)
+      - Type: number
+      - Prefix: $
+      - Step: 0.01
+      - Min: 0
+      - Calculated from: Base rate × nights
+    - Length of stay (calculated, display only)
+      - Type: text
+      - Disabled: true
+      - Value: Calculated nights between check-in and check-out
+
+  - **Financial Details Group**:
+    - Security deposit input (currency)
+      - Type: number
+      - Prefix: $
+      - Step: 0.01
+      - Min: 0
+    - Commission input (currency)
+      - Type: number
+      - Prefix: $
+      - Step: 0.01
+      - Min: 0
+    - Tourism fee input (currency)
+      - Type: number
+      - Prefix: $
+      - Step: 0.01
+      - Min: 0
+    - VAT input (currency)
+      - Type: number
+      - Prefix: $
+      - Step: 0.01
+      - Min: 0
+    - Net to owner (calculated)
+      - Type: number
+      - Prefix: $
+      - Step: 0.01
+      - Disabled: true
+      - Calculated from: Total amount - Commission - Tourism fee - VAT
+
+  - **Additional Information Group**:
+    - Notes/special requests textarea
+      - Rows: 4
+      - Placeholder: "Enter any special requests or notes"
+    - Status dropdown (options: Confirmed, Pending, Cancelled)
+      - Default: "Confirmed"
+    - Payment status dropdown (options: Paid, Partial, Pending)
+      - Default: "Paid"
+    - Send confirmation checkbox
+      - Label: "Send confirmation email to guest"
+      - Default: checked
+
+- **Form Actions**:
+  - Cancel button (outline variant)
+    - Text: "Cancel"
+    - Action: Navigate back to bookings list
+  - Save button (primary variant)
+    - Text: "Save Booking"
+    - Action: Submit form
+    - Loading state shows spinner when processing
+  - Position: Bottom right aligned
+  - Gap between buttons: 12px
+  - Margin top: 24px
+
+- **Guest Selection Modal**:
+  - Title: "Select Guest"
+  - Search input to filter guests
+    - Placeholder: "Search by name or email"
+    - Icon: Search
+  - Table of existing guests with columns:
+    - Name
+    - Email
+    - Phone
+    - Last Stay
+  - Pagination
+  - "Select" button for each guest
+  - "Cancel" and "New Guest" buttons in footer
+  - Width: 600px
+  - Max-height: 80vh
+  - Overflow: auto for table
+
+- **Responsive Behavior**:
+  - Desktop: Two column form layout
+  - Tablet: Two column for some groups, single for others
+  - Mobile: Single column form layout
+  - Reduced padding on mobile: 16px
+
+### Edit Booking Page
+- **Route**: /bookings/[id]/edit
+- **Layout**:
+  - Similar to Add New Booking page
+  - Form pre-populated with booking data
+
+- **Page Header**:
+  - Title: "Edit Booking"
+  - Back button: Ghost variant with arrow left icon
+  - Margin bottom: 24px
+  - Display: flex
+  - Align: center
+  - Gap: 16px
+
+- **Form Card**:
+  - Identical to Add New Booking form
+  - All fields pre-populated with existing booking data
+  - Same layout and styling
+
+- **Additional Elements**:
+  - Booking ID displayed (read-only)
+    - Label: "Booking ID"
+    - Value: [id]
+    - Font: monospace
+    - Size: 14px
+  - Creation date displayed (read-only)
+    - Label: "Created on"
+    - Value: [date] by [user]
+    - Font: normal
+    - Size: 14px
+  - "Cancel Booking" button (destructive variant)
+    - Position: Bottom left
+    - Opens confirmation modal
+    - Icon: X
+
+- **Confirmation Modal** (when cancelling booking):
+  - Title: "Cancel Booking"
+  - Message: "Are you sure you want to cancel this booking? This action cannot be undone."
+  - Cancel button (outline)
+  - Confirm button (destructive)
+  - Width: 400px
+  - Padding: 24px
+  - Border-radius: 8px
+
+- **Form Actions**:
+  - Cancel button (outline variant)
+    - Text: "Cancel"
+    - Action: Navigate back to booking view
+  - Update button (primary variant)
+    - Text: "Update Booking"
+    - Action: Submit form
+    - Loading state shows spinner when processing
+  - Delete button (destructive variant)
+    - Text: "Delete"
+    - Action: Opens confirmation modal
+    - Position: Left side
+  - Position: Bottom aligned, update/cancel right, delete left
+  - Gap between buttons: 12px
+  - Margin top: 24px
+
+### View Booking Page
+- **Route**: /bookings/[id]
+- **Layout**:
+  - Full width content area
+  - Multiple cards for different booking info sections
+
+- **Page Header**:
+  - Title: "Booking Details"
+  - Subtitle: "View booking information"
+  - Action buttons:
+    - Edit Booking (secondary variant)
+    - Back to Bookings (outline variant, left aligned)
+  - Margin bottom: 24px
+  - Display: flex
+  - Justify: space-between
+  - Align: center
+
+- **Booking Info Section**:
+  - Grid layout with two cards side by side (stacks on mobile)
+  - Grid template columns: 2fr 1fr
+  - Grid gap: 24px
+  
+  - **Guest Information Card**:
+    - Title: "Guest Information"
+    - Content:
+      - Booking reference
+      - Status badge
+      - Guest name (large font)
+      - Email and phone
+      - Guest document link (if available)
+    - Width: 2/3 on desktop
+    - Padding: 24px
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Background: white
+    - Box-shadow: Low elevation
+
+  - **Booking Summary Card**:
+    - Title: "Booking Summary"
+    - Content:
+      - Room/property
+      - Check-in/out dates
+      - Number of nights
+      - Number of guests (adults/children)
+      - Rate breakdown list
+      - Total amount (large font)
+    - Width: 1/3 on desktop
+    - Same styling as Guest Information card
+
+- **Additional Details Section**:
+  - Grid layout with two cards side by side (stacks on mobile)
+  - Grid template columns: 1fr 1fr
+  - Grid gap: 24px
+  
+  - **Payment Information Card**:
+    - Title: "Payment Information"
+    - Content:
+      - Payment status badge
+      - Amount paid
+      - Pending amount (if any)
+      - Payment method
+      - Receipt link (if available)
+    - Same card styling as above
+    
+  - **Notes & Special Requests Card**:
+    - Title: "Notes & Special Requests"
+    - Content:
+      - Notes text
+      - Special requests text
+      - Empty state if no notes/requests
+    - Same card styling as above
+
+- **Booking Timeline Card**:
+  - Title: "Booking Timeline"
+  - Content:
+    - Timeline component showing:
+      - Booking created
+      - Payment received
+      - Check-in date
+      - Check-out date
+      - Cancellation (if applicable)
+    - Each timeline item:
+      - Icon indicating event type
+      - Event description
+      - Date and time
+      - User who performed action (if applicable)
+  - Full width card
+  - Timeline items connected with vertical line
+  - Timeline styling:
+    - Vertical line: 2px solid #E2E8F0
+    - Dots at each event: 12px diameter, colored by event type
+    - Left padding for event details: 24px
+    - Spacing between events: 24px
+    - Icon background: Light colored circle (40px)
+
+- **Action Buttons**:
+  - Send receipt button (secondary variant)
+    - Icon: Mail
+    - Text: "Send Receipt"
+  - Cancel booking button (destructive variant)
+    - Icon: X
+    - Text: "Cancel Booking"
+    - Opens confirmation modal
+  - Print booking button (outline variant)
+    - Icon: Printer
+    - Text: "Print"
+  - Position: Bottom of page
+  - Margin top: 24px
+  - Gap between buttons: 12px
+  - Display: flex
+  - Justify: flex-end
+
+- **Responsive Behavior**:
+  - Desktop: Cards arranged in grid
+  - Tablet/Mobile: Cards stacked vertically
+  - Full width cards on mobile
+  - Reduced padding on mobile: 16px
+
+### Availability Calendar Page
+- **Route**: /availability
+- **Layout**:
+  - Full width content area
+  - Filters on the left
+  - Calendar view on the right
+
+- **Page Header**:
+  - Title: "Availability Calendar"
+  - Subtitle: "View and manage room availability"
+  - Date navigation controls:
+    - Previous/Next buttons
+    - Today button
+    - Month/year selector
+  - Margin bottom: 24px
+  - Display: flex
+  - Justify: space-between
+  - Align: center
+
+- **Filter Sidebar**:
+  - White background card
+  - Border: 1px solid #E2E8F0
+  - Border radius: 8px
+  - Padding: 16px
+  - Width: 280px on desktop
+  - Contains:
+    - Property filter dropdown
+      - Label: "Property"
+      - Placeholder: "All Properties"
+      - Width: 100%
+    - Room type filter dropdown
+      - Label: "Room Type"
+      - Placeholder: "All Types"
+      - Width: 100%
+    - Status filter checkboxes
+      - Options:
+        - Available
+        - Booked
+        - Maintenance
+        - Cleaning
+      - Each with colored square indicator
+    - Clear filters button
+      - Style: Outline
+      - Full width
+  - Position: Fixed on desktop, collapsible on mobile
+  - Margin right: 24px
+  - Box-shadow: Low elevation
+
+- **Calendar View**:
+  - Month grid showing all days
+  - Row for each room
+  - Header row showing dates
+  - First column showing room numbers
+  - Each cell represents room status for that day:
+    - Available: Green
+    - Booked: Red with booking info on hover
+    - Maintenance: Yellow
+    - Cleaning: Blue
+  - Cell hover: Shows tooltip with details
+  - Cell click: Opens booking details or create booking modal
+  - Sticky headers for dates and room numbers
+  - Horizontal scroll for viewing more days
+  - Calendar styling:
+    - Border: 1px solid #E2E8F0
+    - Header background: #F9FAFB
+    - Cell size: 40px by 40px minimum
+    - Cell border: 1px solid #E2E8F0
+    - Available: #10B981 background, 20% opacity
+    - Booked: #EF4444 background, 20% opacity
+    - Maintenance: #F59E0B background, 20% opacity
+    - Cleaning: #3B82F6 background, 20% opacity
+    - Booking spans multiple days: Connected cells with solid background
+
+- **Legend**:
+  - Color coded status indicators
+  - Position: Below calendar
+  - Display: Flex row with items
+  - Each legend item:
+    - Color square (12px by 12px)
+    - Label text
+    - Margin right: 16px
+  - Margin top: 16px
+
+- **Tooltip on Cell Hover**:
+  - Shows:
+    - Room number and type
+    - Status text
+    - Booking details if booked (guest, dates)
+    - Last cleaning date if relevant
+  - Background: White
+  - Border: 1px solid #E2E8F0
+  - Border-radius: 6px
+  - Shadow: Medium elevation
+  - Padding: 8px 12px
+  - Max-width: 240px
+  - Z-index: 20
+  - Pointer arrow to cell
+
+- **Booking Details Modal** (on cell click):
+  - Shows existing booking details
+  - Action buttons for edit, cancel
+  - Similar layout to booking view page, but compact
+  - Width: 500px maximum
+  - Height: Auto, max 80vh
+  - Overflow: Auto
+
+- **Create Booking Modal** (on available cell click):
+  - Pre-filled new booking form with selected date and room
+  - Simpler version of add booking form
+  - Width: 500px maximum
+  - Height: Auto, max 80vh
+  - Overflow: Auto
+
+- **Responsive Behavior**:
+  - Desktop: Side-by-side filter and calendar
+  - Tablet: Collapsible filter, smaller calendar cells
+  - Mobile: Filter as dropdown, vertical scroll for calendar
+  - Calendar becomes scrollable horizontally on smaller screens
+
+### Rooms Page
+- **Route**: /rooms
+- **Layout**:
+  - Full width content area
+  - Search and filter section at top
+  - Rooms list/grid below
+  - Pagination at bottom
+
+- **Page Header**:
+  - Title: "Rooms"
+  - Subtitle: "Manage all properties and rooms"
+  - "Add New Room" button (primary style, icon: Plus)
+  - Margin bottom: 24px
+  - Display: flex
+  - Justify: space-between
+  - Align: center
+
+- **Search and Filter Section**:
+  - Card with white background
+  - Border: 1px solid #E2E8F0
+  - Border radius: 8px
+  - Padding: 16px
+  - Contains:
+    - Search input (icon: Search, placeholder: "Search rooms...")
+      - Width: 100% to fit container
+    - Status filter dropdown
+      - Options: All, Available, Occupied, Maintenance, Cleaning
+      - Label: "Status"
+    - Property filter dropdown
+      - Options: All properties in system
+      - Label: "Property"
+    - Clear filters button
+  - Flex layout that stacks on mobile
+  - Gap between elements: 16px
+  - Border-radius: 6px for all inputs
+  - Height: 40px for all inputs
+
+- **View Toggle**:
+  - Toggle between List and Grid views
+  - Two button group (List/Grid)
+  - Icon only (LayoutList, LayoutGrid from Lucide)
+  - Position: Above the rooms list, right aligned
+  - Only visible on desktop and tablet
+  - Button size: 32px by 32px
+  - Border: 1px solid #E2E8F0
+  - Border-radius: 4px
+  - Active state: Light background, primary text
+
+- **Rooms List View**:
+  - Table with columns:
+    - Room Number (sortable)
+    - Property (sortable)
+    - Type (sortable)
+    - Status (with color-coded badge)
+    - Capacity
+    - Base Rate (sortable)
+    - Actions (view, edit, delete)
+  - Row hover: Light background color
+  - Status badges:
+    - Available: Green
+    - Occupied: Red
+    - Maintenance: Yellow
+    - Cleaning: Blue
+  - Action buttons: Icon only, ghost variant
+  - Empty state: "No rooms found"
+  - Table:
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Overflow: hidden
+    - Cell padding: 12px 16px
+    - Header background: #F9FAFB
+    - Row border-top: 1px solid #E2E8F0
+    - First row no border
+
+- **Rooms Grid View**:
+  - Cards in 3-column grid (desktop), 2-column (tablet), 1-column (mobile)
+  - Each card:
+    - Room image at top
+      - Aspect ratio: 16:9
+      - Object-fit: cover
+      - Height: 160px
+      - Border-radius: 8px 8px 0 0
+    - Room number and property
+    - Type and status badge
+    - Capacity and rate
+    - Actions at bottom
+  - Gap between cards: 16px
+  - Card padding: 16px
+  - Hover effect: Slight elevation increase
+  - Card:
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Shadow: Low elevation
+    - Background: White
+    - Height: ~320px
+
+- **Pagination**:
+  - Current page indicator
+  - Previous/Next buttons
+  - Page number buttons (showing 5 pages at a time)
+  - "Showing X-Y of Z results" text
+  - Centered at bottom of page
+  - Margin top: 24px
+  - Button size: 32px by 32px
+  - Active page: Primary background, white text
+  - Inactive page: White background, dark text
+
+- **Responsive Behavior**:
+  - Desktop: Full table/grid with all columns
+  - Tablet: Horizontal scroll for table, 2-column grid
+  - Mobile: Simplified table (fewer columns), 1-column grid
+  - Filters stack vertically on mobile
+
+### Add New Room Page
+- **Route**: /rooms/new
+- **Layout**:
+  - Full width content area
+  - Form in card container
+
+- **Page Header**:
+  - Title: "Add New Room"
+  - Back button: Ghost variant with arrow left icon
+  - Margin bottom: 24px
+  - Display: flex
+  - Align: center
+  - Gap: 16px
+
+- **Form Card**:
+  - White background
+  - Border: 1px solid #E2E8F0
+  - Border radius: 8px
+  - Shadow: Low elevation
+  - Padding: 24px
+
+- **Form Layout**:
+  - Two column grid on desktop (stacks on mobile)
+  - Tab navigation for different sections
+  - Gap between fields: 16px
+  - Grid template columns: repeat(2, 1fr)
+  - Grid column gap: 24px
+  - Grid row gap: 16px
+
+- **Form Tabs**:
+  - Basic Information (default)
+  - Amenities & Features
+  - Pricing
+  - Images
+  - Settings
+  - Tab styling:
+    - Border bottom: 1px solid #E2E8F0
+    - Padding: 12px 16px
+    - Active tab: Border bottom 2px solid primary, dark text
+    - Inactive tab: Gray text
+    - Hover: Darker text
+    - Margin bottom: 24px
+
+- **Basic Information Tab**:
+  - Room number input (required)
+    - Type: text
+    - Placeholder: "Enter room number"
+  - Property dropdown (required)
+    - Options: List of properties
+    - Placeholder: "Select property"
+  - Room type dropdown (required)
+    - Options: List of room types
+    - Placeholder: "Select room type"
+  - Floor input
+    - Type: text
+    - Placeholder: "Enter floor number"
+  - Size input (square feet/meters)
+    - Type: number
+    - Min: 0
+    - Placeholder: "Enter room size"
+    - Suffix: "sq ft"
+  - Max adults input (number)
+    - Type: number
+    - Min: 1
+    - Default: 2
+  - Max children input (number)
+    - Type: number
+    - Min: 0
+    - Default: 0
+  - Description textarea
+    - Rows: 4
+    - Placeholder: "Enter room description"
+
+- **Amenities & Features Tab**:
+  - Checkbox grid for common amenities:
+    - WiFi
+    - TV
+    - Air Conditioning
+    - Heating
+    - Balcony
+    - Kitchen
+    - etc.
+  - Additional amenities text input
+    - Placeholder: "Enter additional amenities"
+  - Multiple selection with visual indication
+  - Checkbox styling:
+    - Size: 16px by 16px
+    - Checked: Primary color
+    - Border: 1px solid #CBD5E0
+    - Border-radius: 4px
+    - Label: Right of checkbox, 14px text
+    - Gap: 8px
+    - Margin bottom: 12px per item
+  - Grid layout: 3 columns on desktop, 2 on tablet, 1 on mobile
+
+- **Pricing Tab**:
+  - Base rate input (currency, required)
+    - Type: number
+    - Prefix: $
+    - Min: 0
+    - Step: 0.01
+    - Placeholder: "Enter base rate"
+  - Weekend rate input (currency)
+    - Type: number
+    - Prefix: $
+    - Min: 0
+    - Step: 0.01
+    - Placeholder: "Enter weekend rate"
+  - Weekly discount input (percentage)
+    - Type: number
+    - Suffix: "%"
+    - Min: 0
+    - Max: 100
+    - Placeholder: "Enter weekly discount"
+  - Monthly discount input (percentage)
+    - Type: number
+    - Suffix: "%"
+    - Min: 0
+    - Max: 100
+    - Placeholder: "Enter monthly discount"
+  - Seasonal pricing toggle with date range options
+    - Toggle: On/Off
+    - If on, shows additional fields:
+      - Season name
+      - Start date
+      - End date
+      - Rate adjustment (% or fixed)
+    - Can add multiple seasons
+    - Add season button: Secondary variant, small
+
+- **Images Tab**:
+  - Image upload dropzone
+    - Border: 2px dashed #CBD5E0
+    - Border-radius: 8px
+    - Padding: 32px
+    - Text: "Drag and drop images here or click to upload"
+    - Accept: image/*
+    - Multiple: true
+  - Uploaded images gallery
+    - Grid layout: 4 columns on desktop, 3 on tablet, 2 on mobile
+    - Gap: 16px
+  - Drag to reorder functionality
+  - Delete image button on each thumbnail
+    - Icon: X
+    - Position: Top right of thumbnail
+    - Background: Semi-transparent dark
+    - Border-radius: 50%
+  - Set as primary image option
+    - Checkbox on each image
+    - Label: "Primary"
+  - Image thumbnail:
+    - Size: 100px by 100px
+    - Object-fit: cover
+    - Border-radius: 4px
+    - Border: 1px solid #E2E8F0
+    - Primary image: Border 2px solid primary
+
+- **Settings Tab**:
+  - Status dropdown (Available, Maintenance, Cleaning)
+    - Default: "Available"
+  - Owner dropdown (if applicable)
+    - Options: List of property owners
+    - Placeholder: "Select owner"
+  - Active toggle (Yes/No)
+    - Default: Yes
+    - Switch component
+  - Notes textarea
+    - Rows: 4
+    - Placeholder: "Enter additional notes"
+
+- **Form Actions**:
+  - Cancel button (outline variant)
+    - Text: "Cancel"
+    - Action: Navigate back to rooms list
+  - Save button (primary variant)
+    - Text: "Save Room"
+    - Action: Submit form
+    - Loading state shows spinner when processing
+  - Position: Bottom right aligned
+  - Gap between buttons: 12px
+  - Margin top: 24px
+
+- **Responsive Behavior**:
+  - Desktop: Two column form layout within tabs
+  - Tablet: Reduced two columns for some sections
+  - Mobile: Single column form layout
+  - Tabs become scrollable on mobile
+
+### Edit Room Page
+- **Route**: /rooms/[id]/edit
+- **Layout**:
+  - Similar to Add New Room page
+  - Form pre-populated with room data
+
+- **Page Header**:
+  - Title: "Edit Room"
+  - Back button: Ghost variant with arrow left icon
+  - Margin bottom: 24px
+  - Display: flex
+  - Align: center
+  - Gap: 16px
+
+- **Form Card**:
+  - Identical to Add New Room form
+  - All fields pre-populated with existing room data
+  - Same layout and styling
+
+- **Additional Elements**:
+  - Room ID displayed (read-only)
+    - Label: "Room ID"
+    - Value: [id]
+    - Font: monospace
+    - Size: 14px
+  - Creation date displayed (read-only)
+    - Label: "Created on"
+    - Value: [date]
+    - Font: normal
+    - Size: 14px
+  - Last updated date (read-only)
+    - Label: "Last updated"
+    - Value: [date]
+    - Font: normal
+    - Size: 14px
+  - Delete button (destructive variant)
+    - Text: "Delete Room"
+    - Position: Bottom left
+    - Opens confirmation modal
+    - Icon: Trash
+
+- **Booking History Tab**:
+  - Additional tab showing past bookings
+  - Table with recent bookings for this room
+    - Columns:
+      - Booking ID
+      - Guest
+      - Check-in/out
+      - Status
+      - Amount
+    - Limited to 5-10 most recent bookings
+    - "View all" link
+  - Booking metrics (occupancy rate, revenue)
+    - Small stat cards with key metrics
+    - Chart showing occupancy over time (optional)
+
+- **Confirmation Modal** (when deleting room):
+  - Title: "Delete Room"
+  - Message: "Are you sure you want to delete this room? This action cannot be undone."
+  - Cancel button (outline)
+  - Confirm button (destructive)
+  - Width: 400px
+  - Padding: 24px
+  - Border-radius: 8px
+
+- **Form Actions**:
+  - Cancel button (outline variant)
+    - Text: "Cancel"
+    - Action: Navigate back to room view
+  - Update button (primary variant)
+    - Text: "Update Room"
+    - Action: Submit form
+    - Loading state shows spinner when processing
+  - Delete button (destructive variant)
+    - Text: "Delete"
+    - Action: Opens confirmation modal
+    - Position: Left side
+  - Position: Bottom aligned, update/cancel right, delete left
+  - Gap between buttons: 12px
+  - Margin top: 24px
+
+### View Room Page
+- **Route**: /rooms/[id]
+- **Layout**:
+  - Full width content area
+  - Multiple cards for different room info sections
+
+- **Page Header**:
+  - Title: "Room Details"
+  - Room number and property as subtitle
+  - Action buttons:
+    - Edit Room (secondary variant)
+    - Back to Rooms (outline variant, left aligned)
+  - Margin bottom: 24px
+  - Display: flex
+  - Justify: space-between
+  - Align: center
+
+- **Image Gallery**:
+  - Large featured image
+    - Height: 400px
+    - Object-fit: cover
+    - Width: 100%
+    - Border-radius: 8px
+  - Thumbnail strip below
+    - Height: 80px
+    - Gap: 8px
+    - Overflow-x: auto
+    - Scroll snap: x mandatory
+    - Scroll behavior: smooth
+  - Navigation arrows for images
+    - Position: Center left/right of main image
+    - Background: Semi-transparent dark
+    - Border-radius: 50%
+    - Size: 40px by 40px
+    - Icon: ChevronLeft/ChevronRight
+  - Image count indicator
+    - Position: Bottom right of main image
+    - Background: Semi-transparent dark
+    - Border-radius: 4px
+    - Padding: 4px 8px
+    - Text: "1 of 5"
+    - Size: 12px
+  - Thumbnail click to change main image
+  - Full width container
+  - Image aspect ratio: 16:9
+  - Border radius: 8px for images
+  - Active thumbnail: Border 2px solid primary
+
+- **Room Info Section**:
+  - Grid layout with two cards side by side (stacks on mobile)
+  - Grid template columns: 2fr 1fr
+  - Grid gap: 24px
+  
+  - **Basic Details Card**:
+    - Title: "Room Information"
+    - Content:
+      - Room number and property
+      - Type with icon
+      - Status badge
+      - Floor
+      - Size
+      - Max occupancy (adults/children)
+      - Description
+    - Width: 2/3 on desktop
+    - Padding: 24px
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Background: white
+    - Box-shadow: Low elevation
+
+  - **Pricing & Availability Card**:
+    - Title: "Pricing & Availability"
+    - Content:
+      - Base rate (large font)
+      - Weekend rate
+      - Available from date
+      - Next booking (if any)
+      - Owner information (if applicable)
+    - Width: 1/3 on desktop
+    - Same styling as Basic Details card
+
+- **Amenities Card**:
+  - Title: "Amenities & Features"
+  - Content:
+    - Grid of amenity items
+    - Each item has icon and text
+    - 3-column grid on desktop, 2-column on tablet, 1-column on mobile
+    - Icon color: Primary color
+  - Full width card
+  - Same card styling as above
+  - Each amenity:
+    - Icon: Relevant icon from Lucide
+    - Text: Amenity name
+    - Display: Flex
+    - Align: center
+    - Gap: 8px
+    - Padding: 8px 0
+
+- **Upcoming Bookings Card**:
+  - Title: "Upcoming Bookings"
+  - Table showing:
+    - Guest Name
+    - Check-in Date
+    - Check-out Date
+    - Status
+    - Action button (view)
+  - Limited to 5 most recent/upcoming bookings
+  - Link to view all bookings for this room
+  - Empty state if no upcoming bookings
+  - Full width card
+  - Same card styling as above
+  - Table styling consistent with other tables
+
+- **Maintenance History Card**:
+  - Title: "Maintenance History"
+  - Timeline component showing:
+    - Date of maintenance
+    - Type of maintenance
+    - Notes
+    - Performed by
+  - Each timeline item:
+    - Icon indicating maintenance type
+    - Description
+    - Date
+  - Timeline items connected with vertical line
+  - "Schedule Maintenance" button
+    - Style: Secondary
+    - Icon: Tool
+    - Opens modal
+  - Full width card
+  - Same card styling as above
+  - Timeline styling similar to booking timeline
+
+- **Schedule Maintenance Modal**:
+  - Title: "Schedule Maintenance"
+  - Form fields:
+    - Maintenance type dropdown
+    - Date picker
+    - Time picker
+    - Duration input
+    - Notes textarea
+    - Assigned to dropdown
+  - Cancel and Save buttons
+  - Width: 500px
+  - Padding: 24px
+  - Border-radius: 8px
+
+- **Action Buttons**:
+  - Create booking for this room (primary variant)
+    - Icon: Calendar
+    - Text: "Create Booking"
+  - Mark for cleaning (secondary variant)
+    - Icon: Brush
+    - Text: "Mark for Cleaning"
+  - Mark for maintenance (warning variant)
+    - Icon: Tool
+    - Text: "Mark for Maintenance"
+  - Position: Bottom of page
+  - Margin top: 24px
+  - Gap between buttons: 12px
+  - Display: flex
+  - Justify: flex-end
+
+- **Responsive Behavior**:
+  - Desktop: Cards arranged in grid
+  - Tablet/Mobile: Cards stacked vertically
+  - Image gallery: Full width on all devices, height reduced on mobile
+  - Reduced padding on mobile: 16px
+
+### Expenses Page
+- **Route**: /expenses
+- **Layout**:
+  - Full width content area
+  - Search and filter section at top
+  - Expenses table below
+  - Pagination at bottom
+
+- **Page Header**:
+  - Title: "Expenses"
+  - Subtitle: "Manage all property expenses"
+  - "Add New Expense" button (primary style, icon: Plus)
+  - Margin bottom: 24px
+  - Display: flex
+  - Justify: space-between
+  - Align: center
+
+- **Summary Cards**:
+  - Row of 4 stat cards (similar to dashboard)
+  - Each card shows:
+    - Total Expenses (current month)
+    - Average Daily Expense
+    - Highest Category
+    - Expense Trend
+  - Responsive grid (4-2-1 columns)
+  - Card styling consistent with dashboard stats
+  - Margin bottom: 24px
+  - Grid gap: 16px
+
+- **Search and Filter Section**:
+  - Card with white background
+  - Border: 1px solid #E2E8F0
+  - Border radius: 8px
+  - Padding: 16px
+  - Contains:
+    - Search input (icon: Search)
+      - Placeholder: "Search expenses..."
+      - Width: 100% to fit container
+    - Category filter dropdown
+      - Options: All Categories, Maintenance, Utilities, Personnel, Supplies
+      - Label: "Category"
+    - Date filter dropdown
+      - Options: All Time, This Month, Last Month, This Year
+      - Label: "Period"
+    - Property filter dropdown
+      - Options: All properties in system
+      - Label: "Property"
+    - Clear filters button
+  - Grid layout with responsive adjustments
+  - Gap between elements: 16px
+  - Border-radius: 6px for all inputs
+  - Height: 40px for all inputs
+
+- **Expenses Table**:
+  - Table with columns:
+    - Description (sortable)
+    - Amount (sortable)
+    - Date (sortable)
+    - Category (with colored badges)
+    - Property (sortable)
+    - Actions (view, edit, delete)
+  - Row hover: Light background color
+  - Category badges:
+    - Maintenance: Blue
+    - Utilities: Yellow
+    - Personnel: Purple
+    - Supplies: Green
+    - Default: Gray
+  - Action buttons: Icon only, ghost variant
+  - Amount column: Currency format
+  - Empty state: "No expenses found"
+  - Table:
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Overflow: hidden
+    - Cell padding: 12px 16px
+    - Header background: #F9FAFB
+    - Row border-top: 1px solid #E2E8F0
+    - First row no border
+
+- **Pagination**:
+  - Current page indicator
+  - Previous/Next buttons
+  - Page number buttons (showing 5 pages at a time)
+  - "Showing X-Y of Z results" text
+  - Centered at bottom of page
+  - Margin top: 24px
+  - Button size: 32px by 32px
+  - Active page: Primary background, white text
+  - Inactive page: White background, dark text
+
+- **Export Button**:
+  - Position: Top right, next to Add button
+  - Style: Outline
+  - Icon: FileDown
+  - Text: "Export"
+  - Opens dropdown with format options
+  - Options: CSV, Excel, PDF
+
+- **Responsive Behavior**:
+  - Desktop: Full table with all columns
+  - Tablet: Horizontal scroll for table
+  - Mobile: Card view instead of table, each card shows one expense
+  - Cards on mobile:
+    - Description and amount prominently displayed
+    - Date and category below
+    - Actions at bottom
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Padding: 16px
+    - Margin bottom: 16px
+
+### Add New Expense Page
+- **Route**: /expenses/new
+- **Layout**:
+  - Full width content area
+  - Form in card container
+
+- **Page Header**:
+  - Title: "Add New Expense"
+  - Back button: Ghost variant with arrow left icon
+  - Margin bottom: 24px
+  - Display: flex
+  - Align: center
+  - Gap: 16px
+
+- **Form Card**:
+  - White background
+  - Border: 1px solid #E2E8F0
+  - Border radius: 8px
+  - Shadow: Low elevation
+  - Padding: 24px
+
+- **Form Layout**:
+  - Two column grid on desktop (stacks on mobile)
+  - Field groups with related inputs
+  - Gap between fields: 16px
+  - Grid template columns: repeat(2, 1fr)
+  - Grid column gap: 24px
+  - Grid row gap: 16px
+
+- **Form Fields**:
+  - All inputs have labels above, placeholder text, and inline validation
+  - Label style: 14px, medium weight, dark text
+  - Input style: Standard form input component
+
+  - **Basic Information Group**:
+    - Description input (required)
+      - Type: text
+      - Placeholder: "Enter description"
+    - Amount input (currency, required)
+      - Type: number
+      - Prefix: $
+      - Step: 0.01
+      - Min: 0
+      - Placeholder: "Enter amount"
+    - Date picker (required, defaults to today)
+      - Type: date
+      - Format: DD/MM/YYYY
+      - Default: Today
+    - Category dropdown (required)
+      - Options: Maintenance, Utilities, Personnel, Supplies, etc.
+      - Placeholder: "Select category"
+    - Property dropdown (required)
+      - Options: List of properties
+      - Placeholder: "Select property"
+
+  - **Additional Details Group**:
+    - Vendor/Supplier input
+      - Type: text
+      - Placeholder: "Enter vendor/supplier name"
+    - Payment method dropdown
+      - Options: Cash, Credit Card, Bank Transfer, etc.
+      - Placeholder: "Select payment method"
+    - Receipt upload
+      - Type: file
+      - Accept: image/*,.pdf
+      - Multiple: false
+      - Label: "Upload Receipt"
+      - Drop zone similar to room images
+    - Notes textarea
+      - Rows: 4
+      - Placeholder: "Enter any additional notes"
+
+  - **Recurring Options Group**:
+    - Recurring expense toggle
+      - Label: "Recurring Expense"
+      - Type: switch
+    - If toggled on:
+      - Frequency dropdown (Weekly, Monthly, Quarterly, Yearly)
+        - Placeholder: "Select frequency"
+      - End date picker or number of occurrences
+        - Type: date or number
+        - Placeholder: "Select end date" or "Enter occurrences"
+        - Default: None (ongoing)
+
+- **Form Actions**:
+  - Cancel button (outline variant)
+    - Text: "Cancel"
+    - Action: Navigate back to expenses list
+  - Save button (primary variant)
+    - Text: "Save Expense"
+    - Action: Submit form
+    - Loading state shows spinner when processing
+  - Position: Bottom right aligned
+  - Gap between buttons: 12px
+  - Margin top: 24px
+
+- **Responsive Behavior**:
+  - Desktop: Two column form layout
+  - Tablet: Two column for some groups, single for others
+  - Mobile: Single column form layout
+  - Reduced padding on mobile: 16px
+
+### Edit Expense Page
+- **Route**: /expenses/[id]/edit
+- **Layout**:
+  - Similar to Add New Expense page
+  - Form pre-populated with expense data
+
+- **Page Header**:
+  - Title: "Edit Expense"
+  - Back button: Ghost variant with arrow left icon
+  - Margin bottom: 24px
+  - Display: flex
+  - Align: center
+  - Gap: 16px
+
+- **Form Card**:
+  - Identical to Add New Expense form
+  - All fields pre-populated with existing expense data
+  - Same layout and styling
+
+- **Additional Elements**:
+  - Expense ID displayed (read-only)
+    - Label: "Expense ID"
+    - Value: [id]
+    - Font: monospace
+    - Size: 14px
+  - Creation date displayed (read-only)
+    - Label: "Created on"
+    - Value: [date] by [user]
+    - Font: normal
+    - Size: 14px
+  - Last updated date (read-only)
+    - Label: "Last updated"
+    - Value: [date] by [user]
+    - Font: normal
+    - Size: 14px
+  - Delete button (destructive variant)
+    - Text: "Delete Expense"
+    - Position: Bottom left
+    - Opens confirmation modal
+    - Icon: Trash
+
+- **Receipt Preview**:
+  - Thumbnail of uploaded receipt
+    - Size: 100px by 100px
+    - Object-fit: cover
+    - Border-radius: 4px
+    - Border: 1px solid #E2E8F0
+  - Option to view larger or download
+    - Icon buttons: Expand, Download
+    - Position: Below thumbnail
+  - Delete receipt button
+    - Icon: X
+    - Position: Top right of thumbnail
+  - Upload new receipt button
+    - Text: "Replace"
+    - Style: Outline, small
+    - Position: Below thumbnail
+
+- **Confirmation Modal** (when deleting expense):
+  - Title: "Delete Expense"
+  - Message: "Are you sure you want to delete this expense? This action cannot be undone."
+  - Cancel button (outline)
+  - Confirm button (destructive)
+  - Width: 400px
+  - Padding: 24px
+  - Border-radius: 8px
+
+- **Form Actions**:
+  - Cancel button (outline variant)
+    - Text: "Cancel"
+    - Action: Navigate back to expense view
+  - Update button (primary variant)
+    - Text: "Update Expense"
+    - Action: Submit form
+    - Loading state shows spinner when processing
+  - Delete button (destructive variant)
+    - Text: "Delete"
+    - Action: Opens confirmation modal
+    - Position: Left side
+  - Position: Bottom aligned, update/cancel right, delete left
+  - Gap between buttons: 12px
+  - Margin top: 24px
+
+### View Expense Page
+- **Route**: /expenses/[id]
+- **Layout**:
+  - Full width content area
+  - Multiple cards for different expense info sections
+
+- **Page Header**:
+  - Title: "Expense Details"
+  - Action buttons:
+    - Edit Expense (secondary variant)
+    - Back to Expenses (outline variant, left aligned)
+  - Margin bottom: 24px
+  - Display: flex
+  - Justify: space-between
+  - Align: center
+
+- **Expense Info Section**:
+  - Grid layout with two cards side by side (stacks on mobile)
+  - Grid template columns: 1fr 1fr
+  - Grid gap: 24px
+  
+  - **Basic Information Card**:
+    - Title: "Basic Information"
+    - Content:
+      - Description (large font)
+      - Amount (large font, currency format)
+      - Date
+      - Category (with badge)
+      - Property
+      - Vendor (if available)
+    - Width: 50% on desktop
+    - Padding: 24px
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Background: white
+    - Box-shadow: Low elevation
+    - Each info item:
+      - Display: grid
+      - Grid template columns: 120px 1fr
+      - Label: Gray text, 14px
+      - Value: Dark text, 14px or 16px
+      - Padding: 8px 0
+      - Border-bottom: 1px solid #F9FAFB
+      - Last item no border
+
+  - **Additional Details Card**:
+    - Title: "Additional Details"
+    - Content:
+      - Payment status (with badge)
+      - Payment method
+      - Notes (if available)
+      - Created by
+      - Created date
+    - Width: 50% on desktop
+    - Same styling as Basic Information card
+    - Same inner layout for info items
+
+- **Receipt Card** (if receipt exists):
+  - Title: "Receipt"
+  - Content:
+    - Image preview of receipt
+      - Max-height: 300px
+      - Object-fit: contain
+      - Width: 100%
+      - Border: 1px solid #E2E8F0
+      - Border-radius: 4px
+    - Download button
+      - Style: Outline
+      - Icon: Download
+      - Text: "Download"
+    - Open in new tab button
+      - Style: Ghost
+      - Icon: ExternalLink
+      - Text: "View Full Size"
+  - Full width card
+  - Same card styling as above
+  - Image constrained to max height/width
+  - Placeholder if no receipt:
+    - Text: "No receipt uploaded"
+    - Icon: File
+    - Color: Gray
+    - Text align: center
+    - Padding: 32px
+
+- **Related Expenses Card** (if part of recurring series):
+  - Title: "Related Expenses"
+  - Table showing:
+    - Description
+    - Amount
+    - Date
+    - View button
+  - Full width card
+  - Same card styling as above
+  - Table styling consistent with other tables
+  - Only visible if expense is part of recurring series
+
+- **Action Buttons**:
+  - Edit expense button (secondary variant)
+    - Icon: Edit
+    - Text: "Edit"
+  - Delete expense button (destructive variant)
+    - Icon: Trash
+    - Text: "Delete"
+    - Opens confirmation modal
+  - Print expense button (outline variant)
+    - Icon: Printer
+    - Text: "Print"
+    - Opens print dialog
+  - Position: Bottom of page
+  - Margin top: 24px
+  - Gap between buttons: 12px
+  - Display: flex
+  - Justify: flex-end
+
+- **Responsive Behavior**:
+  - Desktop: Cards arranged in grid
+  - Tablet/Mobile: Cards stacked vertically
+  - Full width cards on mobile
+  - Reduced padding on mobile: 16px
+  - Info items stack vertically on small screens:
+    - Label above value
+    - Grid template columns: 1fr
+    - Grid template rows: auto auto
+
+### Cleaning Status Page
+- **Route**: /cleaning
+- **Layout**:
+  - Full width content area
+  - Filter section at top
+  - Cleaning tasks table below
+  - Pagination at bottom
+
+- **Page Header**:
+  - Title: "Cleaning Status"
+  - Subtitle: "Manage room cleaning schedule"
+  - "Schedule Cleaning" button (primary style, icon: Plus)
+  - Margin bottom: 24px
+  - Display: flex
+  - Justify: space-between
+  - Align: center
+
+- **Summary Cards**:
+  - Row of 3 stat cards
+  - Cards show:
+    - Rooms Cleaned Today
+    - Rooms Pending Cleaning
+    - Rooms In Progress
+  - Each card has count, label, and colored icon
+  - Responsive grid (3-1 columns)
+  - Card styling consistent with dashboard stats
+  - Margin bottom: 24px
+  - Grid gap: 16px
+  - Icons:
+    - Cleaned: CheckCircle (green)
+    - Pending: Clock (yellow)
+    - In Progress: RotateCw (blue)
+
+- **Filter Section**:
+  - Card with white background
+  - Border: 1px solid #E2E8F0
+  - Border radius: 8px
+  - Padding: 16px
+  - Contains:
+    - Status filter dropdown
+      - Options: All, Completed, In Progress, Scheduled, Delayed
+      - Label: "Status"
+    - Property filter dropdown
+      - Options: All properties in system
+      - Label: "Property"
+    - Date filter (single date)
+      - Type: date
+      - Format: DD/MM/YYYY
+      - Default: Today
+      - Label: "Date"
+    - Search input (for room number)
+      - Placeholder: "Search by room"
+      - Icon: Search
+    - Clear filters button
+  - Flex layout that stacks on mobile
+  - Gap between elements: 16px
+  - Border-radius: 6px for all inputs
+  - Height: 40px for all inputs
+
+- **Cleaning Tasks Table**:
+  - Table with columns:
+    - Property (sortable)
+    - Room (sortable)
+    - Assigned To (sortable)
+    - Date (sortable)
+    - Status (with color-coded badges)
+    - Actions (mark complete, edit, delete)
+  - Row hover: Light background color
+  - Status badges:
+    - Completed: Green
+    - In Progress: Blue
+    - Scheduled: Purple
+    - Delayed: Red
+  - Action buttons:
+    - Mark Complete: Icon button, CheckCircle
+    - Edit: Icon button, Edit
+    - Delete: Icon button, Trash
+  - Empty state: "No cleaning tasks found"
+  - Table:
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Overflow: hidden
+    - Cell padding: 12px 16px
+    - Header background: #F9FAFB
+    - Row border-top: 1px solid #E2E8F0
+    - First row no border
+
+- **Schedule Cleaning Modal**:
+  - Title: "Schedule Cleaning"
+  - Form fields:
+    - Property dropdown
+      - Options: All properties
+      - Placeholder: "Select property"
+    - Room dropdown (filtered by property)
+      - Options: Rooms in selected property
+      - Placeholder: "Select room"
+      - Disabled until property selected
+    - Date picker
+      - Type: date
+      - Format: DD/MM/YYYY
+      - Default: Today
+    - Assigned To dropdown
+      - Options: List of staff
+      - Placeholder: "Assign to"
+    - Notes textarea
+      - Rows: 3
+      - Placeholder: "Enter cleaning instructions"
+    - Status dropdown
+      - Options: Scheduled, In Progress
+      - Default: "Scheduled"
+  - Action buttons:
+    - Cancel (outline)
+    - Schedule Cleaning (primary)
+  - Width: 500px
+  - Padding: 24px
+  - Border-radius: 8px
+  - Field margin bottom: 16px
+
+- **Mark Complete Modal**:
+  - Title: "Mark Cleaning Complete"
+  - Form fields:
+    - Completion time (defaults to now)
+    - Notes textarea
+    - Quality check checkboxes
+  - Action buttons:
+    - Cancel (outline)
+    - Mark Complete (success variant)
+  - Width: 400px
+  - Padding: 24px
+  - Border-radius: 8px
+
+- **Pagination**:
+  - Current page indicator
+  - Previous/Next buttons
+  - Page number buttons
+  - "Showing X-Y of Z results" text
+  - Centered at bottom of page
+  - Margin top: 24px
+  - Same styling as other pagination components
+
+- **Responsive Behavior**:
+  - Desktop: Full table with all columns
+  - Tablet: Horizontal scroll for table
+  - Mobile: Card view instead of table, each card shows one task
+  - Cards on mobile:
+    - Room and property prominently displayed
+    - Date and assigned to below
+    - Status badge
+    - Actions at bottom
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Padding: 16px
+    - Margin bottom: 16px
+
+### Users Page
+- **Route**: /users
+- **Layout**:
+  - Full width content area
+  - Filter section at top
+  - Users table below
+  - Pagination at bottom
+
+- **Page Header**:
+  - Title: "Users"
+  - Subtitle: "Manage system users and permissions"
+  - "Add New User" button (primary style, icon: Plus)
+  - Margin bottom: 24px
+  - Display: flex
+  - Justify: space-between
+  - Align: center
+
+- **Filter Section**:
+  - Card with white background
+  - Border: 1px solid #E2E8F0
+  - Border radius: 8px
+  - Padding: 16px
+  - Contains:
+    - Search input (icon: Search)
+      - Placeholder: "Search users..."
+      - Width: 100% to fit container
+    - Role filter dropdown
+      - Options: All, Admin, Manager, Staff
+      - Label: "Role"
+    - Status filter dropdown
+      - Options: All, Active, Inactive
+      - Label: "Status"
+    - Clear filters button
+  - Flex layout that stacks on mobile
+  - Gap between elements: 16px
+  - Border-radius: 6px for all inputs
+  - Height: 40px for all inputs
+
+- **Users Table**:
+  - Table with columns:
+    - Name (with avatar)
+    - Email
+    - Role (with badge)
+    - Status (with badge)
+    - Last Login
+    - Actions (view, edit, delete)
+  - Row hover: Light background color
+  - Role badges:
+    - Admin: Purple
+    - Manager: Blue
+    - Staff: Green
+    - Others: Gray
+  - Status badges:
+    - Active: Green
+    - Inactive: Gray
+  - Action buttons: Icon only, ghost variant
+  - Avatar style:
+    - Circle, 32px diameter
+    - Text fallback if no image (initials)
+    - Border: 1px solid light gray
+  - Empty state: "No users found"
+  - Table:
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Overflow: hidden
+    - Cell padding: 12px 16px
+    - Header background: #F9FAFB
+    - Row border-top: 1px solid #E2E8F0
+    - First row no border
+
+- **Pagination**:
+  - Current page indicator
+  - Previous/Next buttons
+  - Page number buttons (showing 5 pages at a time)
+  - "Showing X-Y of Z results" text
+  - Centered at bottom of page
+  - Margin top: 24px
+  - Same styling as other pagination components
+
+- **Responsive Behavior**:
+  - Desktop: Full table with all columns
+  - Tablet: Horizontal scroll for table
+  - Mobile: Card view instead of table, each card shows one user
+  - Cards on mobile:
+    - Avatar and name prominently displayed
+    - Email below
+    - Role and status badges
+    - Actions at bottom
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Padding: 16px
+    - Margin bottom: 16px
+
+### Add New User Page
+- **Route**: /users/new
+- **Layout**:
+  - Full width content area
+  - Form in card container
+
+- **Page Header**:
+  - Title: "Add New User"
+  - Back button: Ghost variant with arrow left icon
+  - Margin bottom: 24px
+  - Display: flex
+  - Align: center
+  - Gap: 16px
+
+- **Form Card**:
+  - White background
+  - Border: 1px solid #E2E8F0
+  - Border radius: 8px
+  - Shadow: Low elevation
+  - Padding: 24px
+
+- **Form Layout**:
+  - Two column grid on desktop (stacks on mobile)
+  - Field groups with related inputs
+  - Gap between fields: 16px
+  - Grid template columns: repeat(2, 1fr)
+  - Grid column gap: 24px
+  - Grid row gap: 16px
+
+- **Form Fields**:
+  - All inputs have labels above, placeholder text, and inline validation
+  - Label style: 14px, medium weight, dark text
+  - Input style: Standard form input component
+
+  - **Personal Information Group**:
+    - First name input (required)
+      - Type: text
+      - Placeholder: "Enter first name"
+    - Last name input (required)
+      - Type: text
+      - Placeholder: "Enter last name"
+    - Email input (required, email validation)
+      - Type: email
+      - Placeholder: "Enter email address"
+    - Phone input (optional)
+      - Type: tel
+      - Placeholder: "Enter phone number"
+    - Profile image upload
+      - Type: file
+      - Accept: image/*
+      - Label: "Upload profile image"
+      - Default avatar if none uploaded
+      - Preview shows uploaded image or initials
+      - Circle crop, 96px diameter
+
+  - **Account Details Group**:
+    - Role dropdown (required)
+      - Options: Admin, Manager, Staff
+      - Placeholder: "Select role"
+    - Department input (optional)
+      - Type: text
+      - Placeholder: "Enter department"
+    - Job title input (optional)
+      - Type: text
+      - Placeholder: "Enter job title"
+    - Password input (required, password strength indicator)
+      - Type: password
+      - Placeholder: "Enter password"
+      - Strength meter below:
+        - Weak: Red
+        - Medium: Yellow
+        - Strong: Green
+    - Confirm password input (required, must match)
+      - Type: password
+      - Placeholder: "Confirm password"
+      - Validation: Must match password
+
+  - **Status and Settings Group**:
+    - Status toggle (Active/Inactive)
+      - Type: switch
+      - Default: Active
+    - Send welcome email checkbox
+      - Type: checkbox
+      - Label: "Send welcome email"
+      - Default: checked
+    - Require password change checkbox
+      - Type: checkbox
+      - Label: "Require password change on first login"
+      - Default: checked
+
+  - **Permissions Group** (expands based on role):
+    - Matrix of permissions with checkboxes
+    - Grouped by section (Bookings, Rooms, Expenses, etc.)
+    - Each permission has read/write/delete options
+    - Some permissions automatically selected based on role
+    - Section headers with toggle all for that section
+    - Collapsible sections
+    - Section styling:
+      - Header: Background light gray
+      - Border: 1px solid #E2E8F0
+      - Border-radius: 6px
+      - Padding: 12px
+      - Margin bottom: 16px
+    - Permission item:
+      - Display: flex
+      - Justify: space-between
+      - Align: center
+      - Padding: 8px 0
+      - Border-bottom: 1px solid #F9FAFB
+      - Last item no border
+
+- **Form Actions**:
+  - Cancel button (outline variant)
+    - Text: "Cancel"
+    - Action: Navigate back to users list
+  - Create User button (primary variant)
+    - Text: "Create User"
+    - Action: Submit form
+    - Loading state shows spinner when processing
+  - Position: Bottom right aligned
+  - Gap between buttons: 12px
+  - Margin top: 24px
+
+- **Responsive Behavior**:
+  - Desktop: Two column form layout
+  - Tablet: Two column for some groups, single for others
+  - Mobile: Single column form layout
+  - Permissions matrix becomes more compact on mobile
+
+### Edit User Page
+- **Route**: /users/[id]/edit
+- **Layout**:
+  - Similar to Add New User page
+  - Form pre-populated with user data
+
+- **Page Header**:
+  - Title: "Edit User"
+  - Back button: Ghost variant with arrow left icon
+  - Margin bottom: 24px
+  - Display: flex
+  - Align: center
+  - Gap: 16px
+
+- **Form Card**:
+  - Identical to Add New User form
+  - All fields pre-populated with existing user data
+  - Same layout and styling
+
+- **Additional Elements**:
+  - User ID displayed (read-only)
+    - Label: "User ID"
+    - Value: [id]
+    - Font: monospace
+    - Size: 14px
+  - Creation date displayed (read-only)
+    - Label: "Created on"
+    - Value: [date]
+    - Font: normal
+    - Size: 14px
+  - Last login date (read-only)
+    - Label: "Last login"
+    - Value: [date]
+    - Font: normal
+    - Size: 14px
+  - Reset password button (secondary variant)
+    - Text: "Reset Password"
+    - Opens modal
+    - Icon: Key
+  - Delete user button (destructive variant)
+    - Text: "Delete User"
+    - Opens confirmation modal
+    - Icon: Trash
+  - Confirmation modals:
+    - Title: "Reset Password" or "Delete User"
+    - Message explaining consequences
+    - Cancel button (outline)
+    - Confirm button (primary or destructive)
+    - Width: 400px
+    - Padding: 24px
+    - Border-radius: 8px
+
+- **Current Sessions Card** (additional section):
+  - Title: "Current Sessions"
+  - Table showing:
+    - Device/Browser
+    - IP Address
+    - Last Active
+    - "End Session" button
+  - Full width card
+  - Same card styling as other cards
+  - Table styling consistent with other tables
+  - "End Session" button:
+    - Style: Outline, small
+    - Icon: LogOut
+    - Opens confirmation modal
+
+- **Form Actions**:
+  - Cancel button (outline variant)
+    - Text: "Cancel"
+    - Action: Navigate back to user view
+  - Update User button (primary variant)
+    - Text: "Update User"
+    - Action: Submit form
+    - Loading state shows spinner when processing
+  - Deactivate/Activate User button (warning/success variant)
+    - Text changes based on current status
+    - Position: Left side
+  - Position: Bottom aligned, update/cancel right, deactivate left
+  - Gap between buttons: 12px
+  - Margin top: 24px
+
+### View User Page
+- **Route**: /users/[id]
+- **Layout**:
+  - Full width content area
+  - Multiple cards for different user info sections
+
+- **Page Header**:
+  - Title: "User Profile"
+  - Action buttons:
+    - Edit User (secondary variant)
+    - Back to Users (outline variant, left aligned)
+  - Margin bottom: 24px
+  - Display: flex
+  - Justify: space-between
+  - Align: center
+
+- **User Profile Card**:
+  - User avatar (large, 96px)
+    - Circle
+    - Image if available, initials if not
+    - Border: 2px solid #E2E8F0
+  - User name (large font)
+    - Size: 24px
+    - Weight: 600
+  - Email and phone
+    - Size: 14px
+    - Color: Gray
+  - Role badge
+    - Color based on role (Admin: Purple, etc.)
+  - Status badge
+    - Color based on status (Active: Green, Inactive: Gray)
+  - Last login date
+    - Size: 12px
+    - Color: Gray
+  - Full width card
+  - Clean layout with center-aligned content
+  - Padding: 32px
+  - Border: 1px solid #E2E8F0
+  - Border-radius: 8px
+  - Background: white
+  - Box-shadow: Low elevation
+
+- **User Stats Section**:
+  - Grid of 3 stat cards
+  - Cards show:
+    - Total Bookings Created
+    - Total Rooms Managed
+    - Active Since (date)
+  - Each card has large number/value and label
+  - Responsive grid (3-1 columns)
+  - Card styling similar to dashboard stats
+  - Margin bottom: 24px
+  - Grid gap: 16px
+
+- **Activity Section**:
+  - Tabs for different activity types:
+    - Recent Activity (default)
+    - Bookings
+    - Actions
+  - Tab styling:
+    - Border bottom: 1px solid #E2E8F0
+    - Padding: 12px 16px
+    - Active tab: Border bottom 2px solid primary, dark text
+    - Inactive tab: Gray text
+    - Hover: Darker text
+    - Margin bottom: 24px
+  
+  - **Recent Activity Tab**:
+    - Timeline component showing:
+      - Logins
+      - Bookings created/modified
+      - Settings changed
+      - Other system actions
+    - Each timeline item:
+      - Icon indicating activity type
+      - Activity description
+      - Date and time
+      - IP address (for logins)
+    - Timeline styling:
+      - Vertical line: 2px solid #E2E8F0
+      - Dots at each event: 12px diameter, colored by event type
+      - Left padding for event details: 24px
+      - Spacing between events: 24px
+      - Background: White
+      - Border: 1px solid #E2E8F0
+      - Border-radius: 8px
+      - Padding: 24px
+
+  - **Bookings Tab**:
+    - Table of bookings created/modified by this user
+    - Columns: Booking ID, Guest, Date, Status, Actions
+    - Pagination if many bookings
+    - Table styling consistent with other tables
+    - Background: White
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Padding: 24px
+
+  - **Actions Tab**:
+    - Table of system actions performed by this user
+    - Columns: Action, Date, Details
+    - Filter by action type
+    - Pagination if many actions
+    - Table styling consistent with other tables
+    - Background: White
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Padding: 24px
+
+- **Permissions Card**:
+  - Title: "Permissions"
+  - Grid display of permission groups
+  - Each group shows:
+    - Section name (Bookings, Rooms, etc.)
+    - Permissions granted (icons for read/write/delete)
+  - Visual indication of permission level
+  - Expandable details
+  - Card styling consistent with other cards
+  - Padding: 24px
+  - Border: 1px solid #E2E8F0
+  - Border-radius: 8px
+  - Background: white
+  - Box-shadow: Low elevation
+  - Permission group:
+    - Display: flex
+    - Justify: space-between
+    - Align: center
+    - Padding: 12px 0
+    - Border-bottom: 1px solid #F9FAFB
+    - Last item no border
+  - Permission icons:
+    - Read: Eye
+    - Write: Edit
+    - Delete: Trash
+
+- **Action Buttons**:
+  - Edit user button (secondary variant)
+    - Icon: Edit
+    - Text: "Edit"
+  - Reset password button (outline variant)
+    - Icon: Key
+    - Text: "Reset Password"
+    - Opens modal
+  - Deactivate/Activate user button (warning/success variant)
+    - Icon: Lock/Unlock
+    - Text changes based on current status
+    - Opens confirmation modal
+  - Position: Bottom of page
+  - Margin top: 24px
+  - Gap between buttons: 12px
+  - Display: flex
+  - Justify: flex-end
+
+- **Responsive Behavior**:
+  - Desktop: Cards arranged in grid
+  - Tablet/Mobile: Cards stacked vertically
+  - Full width cards on mobile
+  - Reduced padding on mobile: 16px
+  - Profile card keeps centered alignment on all screens
+
+### Owners Page
+- **Route**: /owners
+- **Layout**:
+  - Full width content area
+  - Filter section at top
+  - Owners table below
+  - Pagination at bottom
+
+- **Page Header**:
+  - Title: "Property Owners"
+  - Subtitle: "Manage property ownership and contracts"
+  - "Add New Owner" button (primary style, icon: Plus)
+  - Margin bottom: 24px
+  - Display: flex
+  - Justify: space-between
+  - Align: center
+
+- **Summary Cards**:
+  - Row of 3 stat cards
+  - Cards show:
+    - Total Owners
+    - Total Properties Managed
+    - Total Revenue Generated
+  - Each card has count/amount, label, and colored icon
+  - Responsive grid (3-1 columns)
+  - Card styling consistent with dashboard stats
+  - Margin bottom: 24px
+  - Grid gap: 16px
+  - Icons:
+    - Owners: Users (purple)
+    - Properties: Home (blue)
+    - Revenue: DollarSign (green)
+
+- **Filter Section**:
+  - Card with white background
+  - Border: 1px solid #E2E8F0
+  - Border radius: 8px
+  - Padding: 16px
+  - Contains:
+    - Search input (icon: Search)
+      - Placeholder: "Search owners..."
+      - Width: 100% to fit container
+    - Property filter dropdown
+      - Options: All properties in system
+      - Label: "Property"
+    - Status filter dropdown (Active, Inactive)
+      - Label: "Status"
+      - Options: All, Active, Inactive
+    - Clear filters button
+  - Flex layout that stacks on mobile
+  - Gap between elements: 16px
+  - Border-radius: 6px for all inputs
+  - Height: 40px for all inputs
+
+- **Owners Table**:
+  - Table with columns:
+    - Name (with avatar)
+    - Email/Contact
+    - Properties (count)
+    - Revenue (YTD)
+    - Occupancy Rate
+    - Status (with badge)
+    - Actions (view, edit, delete)
+  - Row hover: Light background color
+  - Status badges:
+    - Active: Green
+    - Inactive: Gray
+  - Action buttons: Icon only, ghost variant
+  - Avatar style:
+    - Circle, 32px diameter
+    - Text fallback if no image (initials)
+    - Border: 1px solid light gray
+  - Empty state: "No owners found"
+  - Table:
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Overflow: hidden
+    - Cell padding: 12px 16px
+    - Header background: #F9FAFB
+    - Row border-top: 1px solid #E2E8F0
+    - First row no border
+
+- **Pagination**:
+  - Current page indicator
+  - Previous/Next buttons
+  - Page number buttons (showing 5 pages at a time)
+  - "Showing X-Y of Z results" text
+  - Centered at bottom of page
+  - Margin top: 24px
+  - Same styling as other pagination components
+
+- **Responsive Behavior**:
+  - Desktop: Full table with all columns
+  - Tablet: Horizontal scroll for table
+  - Mobile: Card view instead of table, each card shows one owner
+  - Cards on mobile:
+    - Avatar and name prominently displayed
+    - Email/contact below
+    - Properties count and revenue
+    - Status badge
+    - Actions at bottom
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Padding: 16px
+    - Margin bottom: 16px
+
+### Add New Owner Page
+- **Route**: /owners/new
+- **Layout**:
+  - Full width content area
+  - Form in card container
+
+- **Page Header**:
+  - Title: "Add New Owner"
+  - Back button: Ghost variant with arrow left icon
+  - Margin bottom: 24px
+  - Display: flex
+  - Align: center
+  - Gap: 16px
+
+- **Form Card**:
+  - White background
+  - Border: 1px solid #E2E8F0
+  - Border radius: 8px
+  - Shadow: Low elevation
+  - Padding: 24px
+
+- **Form Layout**:
+  - Two column grid on desktop (stacks on mobile)
+  - Field groups with related inputs
+  - Gap between fields: 16px
+  - Grid template columns: repeat(2, 1fr)
+  - Grid column gap: 24px
+  - Grid row gap: 16px
+
+- **Form Fields**:
+  - All inputs have labels above, placeholder text, and inline validation
+  - Label style: 14px, medium weight, dark text
+  - Input style: Standard form input component
+
+  - **Personal Information Group**:
+    - First name input (required)
+      - Type: text
+      - Placeholder: "Enter first name"
+    - Last name input (required)
+      - Type: text
+      - Placeholder: "Enter last name"
+    - Email input (required, email validation)
+      - Type: email
+      - Placeholder: "Enter email address"
+    - Phone input (required)
+      - Type: tel
+      - Placeholder: "Enter phone number"
+    - Profile image upload
+      - Type: file
+      - Accept: image/*
+      - Label: "Upload profile image"
+      - Default avatar if none uploaded
+      - Preview shows uploaded image or initials
+      - Circle crop, 96px diameter
+
+  - **Address Information Group**:
+    - Address line 1 input
+      - Type: text
+      - Placeholder: "Enter address line 1"
+    - Address line 2 input
+      - Type: text
+      - Placeholder: "Enter address line 2 (optional)"
+    - City input
+      - Type: text
+      - Placeholder: "Enter city"
+    - State/Province input
+      - Type: text
+      - Placeholder: "Enter state/province"
+    - Postal code input
+      - Type: text
+      - Placeholder: "Enter postal code"
+    - Country dropdown
+      - Options: List of countries
+      - Placeholder: "Select country"
+
+  - **Payment Details Group**:
+    - Bank name input
+      - Type: text
+      - Placeholder: "Enter bank name"
+    - Account number input
+      - Type: text
+      - Placeholder: "Enter account number"
+    - Account holder name input
+      - Type: text
+      - Placeholder: "Enter account holder name"
+    - Payment method dropdown
+      - Options: Bank Transfer, Check, PayPal, etc.
+      - Placeholder: "Select payment method"
+    - Payment frequency dropdown
+      - Options: Monthly, Quarterly, Annually
+      - Placeholder: "Select payment frequency"
+      - Default: "Monthly"
+
+  - **Contract Details Group**:
+    - Commission rate input (percentage)
+      - Type: number
+      - Min: 0
+      - Max: 100
+      - Step: 0.01
+      - Suffix: "%"
+      - Placeholder: "Enter commission rate"
+    - Contract start date picker
+      - Type: date
+      - Format: DD/MM/YYYY
+      - Default: Today
+    - Contract end date picker
+      - Type: date
+      - Format: DD/MM/YYYY
+      - Min: Contract start date
+    - Notes textarea
+      - Rows: 4
+      - Placeholder: "Enter any additional notes"
+
+- **Properties Assignment Section**:
+  - Title: "Assign Properties"
+  - Table of available properties with checkboxes
+  - Columns: Property Name, Type, Address, Select
+  - Search filter for properties
+  - Pagination if many properties
+  - Button to add selected properties
+  - Table styling consistent with other tables
+  - Border: 1px solid #E2E8F0
+  - Border-radius: 8px
+  - Margin top: 24px
+  - Checkbox column:
+    - Width: 48px
+    - Align: center
+
+- **Form Actions**:
+  - Cancel button (outline variant)
+    - Text: "Cancel"
+    - Action: Navigate back to owners list
+  - Create Owner button (primary variant)
+    - Text: "Create Owner"
+    - Action: Submit form
+    - Loading state shows spinner when processing
+  - Position: Bottom right aligned
+  - Gap between buttons: 12px
+  - Margin top: 24px
+
+- **Responsive Behavior**:
+  - Desktop: Two column form layout
+  - Tablet: Two column for some groups, single for others
+  - Mobile: Single column form layout
+  - Property assignment table horizontal scroll on small screens
+
+### Edit Owner Page
+- **Route**: /owners/[id]/edit
+- **Layout**:
+  - Similar to Add New Owner page
+  - Form pre-populated with owner data
+
+- **Page Header**:
+  - Title: "Edit Owner"
+  - Back button: Ghost variant with arrow left icon
+  - Margin bottom: 24px
+  - Display: flex
+  - Align: center
+  - Gap: 16px
+
+- **Form Card**:
+  - Identical to Add New Owner form
+  - All fields pre-populated with existing owner data
+  - Same layout and styling
+
+- **Additional Elements**:
+  - Owner ID displayed (read-only)
+    - Label: "Owner ID"
+    - Value: [id]
+    - Font: monospace
+    - Size: 14px
+  - Creation date displayed (read-only)
+    - Label: "Created on"
+    - Value: [date]
+    - Font: normal
+    - Size: 14px
+  - Status toggle (Active/Inactive)
+    - Type: switch
+    - Label based on current status
+  - Delete owner button (destructive variant)
+    - Text: "Delete Owner"
+    - Opens confirmation modal
+    - Icon: Trash
+
+- **Properties Management Section**:
+  - Title: "Managed Properties"
+  - Table of assigned properties
+  - Columns:
+    - Property Name
+    - Type
+    - Commission Rate
+    - Remove (button)
+  - Button to add more properties (opens modal)
+  - Edit commission rate per property
+    - Input field in table cell
+    - Type: number
+    - Min: 0
+    - Max: 100
+    - Step: 0.01
+    - Suffix: "%"
+  - Table styling consistent with other tables
+  - Border: 1px solid #E2E8F0
+  - Border-radius: 8px
+  - Margin top: 24px
+  - Remove button:
+    - Style: Ghost, small
+    - Icon: X
+
+- **Add Properties Modal**:
+  - Title: "Add Properties"
+  - Search filter for properties
+  - Table of unassigned properties with checkboxes
+  - Columns: Property Name, Type, Address, Select
+  - Button to add selected properties
+  - Width: 600px
+  - Max height: 80vh
+  - Overflow: auto for table
+  - Border-radius: 8px
+  - Padding: 24px
+
+- **Confirmation Modal** (when deleting owner):
+  - Title: "Delete Owner"
+  - Message: "Are you sure you want to delete this owner? This action cannot be undone."
+  - Warning about properties: "This will remove the owner from all associated properties."
+  - Cancel button (outline)
+  - Confirm button (destructive)
+  - Width: 400px
+  - Padding: 24px
+  - Border-radius: 8px
+
+- **Form Actions**:
+  - Cancel button (outline variant)
+    - Text: "Cancel"
+    - Action: Navigate back to owner view
+  - Update Owner button (primary variant)
+    - Text: "Update Owner"
+    - Action: Submit form
+    - Loading state shows spinner when processing
+  - Deactivate/Activate Owner button (warning/success variant)
+    - Text changes based on current status
+    - Position: Left side
+  - Position: Bottom aligned, update/cancel right, deactivate left
+  - Gap between buttons: 12px
+  - Margin top: 24px
+
+### View Owner Page
+- **Route**: /owners/[id]
+- **Layout**:
+  - Full width content area
+  - Multiple cards for different owner info sections
+
+- **Page Header**:
+  - Title: "Owner Profile"
+  - Action buttons:
+    - Edit Owner (secondary variant)
+    - Back to Owners (outline variant, left aligned)
+  - Margin bottom: 24px
+  - Display: flex
+  - Justify: space-between
+  - Align: center
+
+- **Owner Info Section**:
+  - Grid layout with two cards side by side (stacks on mobile)
+  - Grid template columns: 2fr 1fr
+  - Grid gap: 24px
+  
+  - **Basic Information Card**:
+    - Title: "Basic Information"
+    - Content:
+      - Owner avatar (large)
+        - Circle, 96px diameter
+        - Image or initials
+        - Border: 2px solid #E2E8F0
+      - Owner name (large font)
+        - Size: 24px
+        - Weight: 600
+      - Email and phone
+        - Size: 14px
+        - Color: Gray
+      - Properties count with icon
+        - Icon: Home
+        - Size: 14px
+        - Color: Primary
+      - Average occupancy with icon
+        - Icon: Percent
+        - Size: 14px
+        - Color: Primary
+    - Width: 2/3 on desktop
+    - Padding: 24px
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Background: white
+    - Box-shadow: Low elevation
+
+  - **Financial Details Card**:
+    - Title: "Financial Details"
+    - Content:
+      - Total revenue (YTD)
+        - Size: 24px
+        - Weight: 600
+        - Currency format
+      - Contact number
+        - Size: 14px
+        - Color: Gray
+      - Payment details (bank info)
+        - Size: 14px
+        - Partially masked
+      - Joined date
+        - Size: 14px
+        - Color: Gray
+      - Payment status badge
+        - Color based on status
+    - Width: 1/3 on desktop
+    - Same styling as Basic Information card
+    - Content layout:
+      - Display: flex
+      - Flex direction: column
+      - Gap: 12px
+
+- **Owner Rooms List**:
+  - Title: "Properties & Rooms"
+  - Table showing:
+    - Property Name
+    - Room Number
+    - Type
+    - Base Rate
+    - Commission Rate
+    - Status
+    - Actions (view)
+  - Grouped by property
+  - Collapsible property groups
+  - "Add Property" button
+    - Style: Secondary
+    - Icon: Plus
+    - Opens the same modal as in Edit page
+  - Full width section
+  - Table styling consistent with other tables
+  - Border: 1px solid #E2E8F0
+  - Border-radius: 8px
+  - Margin top: 24px
+  - Property grouping:
+    - Header row with property name and toggle
+    - Background: Light gray
+    - Font weight: 600
+
+- **Revenue Charts Card**:
+  - Title: "Revenue Overview"
+  - Bar chart showing monthly revenue
+  - Line overlay showing occupancy rate
+  - Legend for the two metrics
+  - Date range selector (YTD, Last 6 months, Custom)
+  - Full width card
+  - Chart height: 320px
+  - Border: 1px solid #E2E8F0
+  - Border-radius: 8px
+  - Margin top: 24px
+  - Padding: 24px
+  - Background: white
+  - Box-shadow: Low elevation
+  - Chart colors:
+    - Revenue bars: Primary color
+    - Occupancy line: Secondary color
+    - Grid lines: Light gray
+    - Text: Dark gray
+
+- **Payment History Card**:
+  - Title: "Payment History"
+  - Table showing:
+    - Date
+    - Amount
+    - Properties Covered
+    - Period
+    - Status
+    - Actions (view receipt)
+  - Pagination if many payments
+  - Full width card
+  - Same card styling as above
+  - Table styling consistent with other tables
+  - Status badges:
+    - Paid: Green
+    - Pending: Yellow
+    - Failed: Red
+
+- **Action Buttons**:
+  - Generate statement button (secondary variant)
+    - Icon: FileText
+    - Text: "Generate Statement"
+  - Send message button (outline variant)
+    - Icon: Mail
+    - Text: "Send Message"
+  - Create payment button (primary variant)
+    - Icon: DollarSign
+    - Text: "Create Payment"
+  - Position: Bottom of page
+  - Margin top: 24px
+  - Gap between buttons: 12px
+  - Display: flex
+  - Justify: flex-end
+
+- **Responsive Behavior**:
+  - Desktop: Cards arranged in grid
+  - Tablet/Mobile: Cards stacked vertically
+  - Full width cards on mobile
+  - Reduced padding on mobile: 16px
+  - Charts become scrollable horizontally on small screens
+
+### Reports Page
+- **Route**: /reports
+- **Layout**:
+  - Full width content area
+  - Report type selection at top
+  - Report configuration in the middle
+  - Report display area at bottom
+
+- **Page Header**:
+  - Title: "Reports"
+  - Subtitle: "Generate and export business reports"
+  - Margin bottom: 24px
+
+- **Report Type Selection**:
+  - Tab navigation for different report types:
+    - Financial Reports
+    - Occupancy Reports
+    - Owner Statements
+    - Tax Reports
+    - Custom Reports
+  - Horizontal scroll on small screens
+  - Active tab highlighted
+  - Each tab has unique icon
+  - Tab styling:
+    - Border bottom: 1px solid #E2E8F0
+    - Padding: 12px 16px
+    - Active tab: Border bottom 2px solid primary, dark text
+    - Inactive tab: Gray text
+    - Hover: Darker text
+    - Margin bottom: 24px
+  - Icon for each tab:
+    - Financial: DollarSign
+    - Occupancy: BedDouble
+    - Owner: Users
+    - Tax: FileText
+    - Custom: Settings
+
+- **Report Configuration Card**:
+  - White background
+  - Border: 1px solid #E2E8F0
+  - Border radius: 8px
+  - Padding: 16px
+  - Contains:
+    - Date range picker
+      - Type: date range
+      - Format: DD/MM/YYYY - DD/MM/YYYY
+      - Default: Current month
+    - Property filter dropdown
+      - Options: All properties, or specific ones
+      - Placeholder: "All Properties"
+    - Owner filter dropdown (if applicable)
+      - Options: All owners, or specific ones
+      - Placeholder: "All Owners"
+      - Only visible for owner statements
+    - Room type filter dropdown (if applicable)
+      - Options: All room types, or specific ones
+      - Placeholder: "All Room Types"
+    - Group by dropdown
+      - Options vary by report type:
+        - Financial: Day, Week, Month
+        - Occupancy: Room, Property, Day
+      - Placeholder: "Group by..."
+    - Additional filters specific to report type
+    - "Generate Report" button (primary variant)
+      - Text: "Generate Report"
+      - Loading state when generating
+  - Form layout changes based on selected report type
+  - Flex/Grid layout that adapts to screen size
+  - Gap between elements: 16px
+  - Border-radius: 6px for all inputs
+  - Height: 40px for all inputs
+
+- **Report Display Section**:
+  - Initially shows placeholder or last generated report
+  - After generation, shows report data
+  - Contains:
+    - Report title and date range
+      - Title reflects selected report type
+      - Date range in format: "Jan 01, 2025 - Jan 31, 2025"
+      - Font size: 18px, weight: 600
+    - Summary metrics at top
+      - Display: flex
+      - Justify: space-between
+      - Gap: 16px
+      - Each metric:
+        - Label: Gray, 14px
+        - Value: Dark, 18px, bold
+    - Visual charts (varies by report type)
+      - Height: 320px
+      - Responsive width
+      - Color scheme matches app theme
+    - Detailed data table
+      - Columns vary by report type
+      - Sortable headers
+      - Pagination if many rows
+    - Footer with totals
+      - Background: Light gray
+      - Font weight: 600 for numbers
+  - Full width card with padding
+  - Background: White
+  - Border: 1px solid #E2E8F0
+  - Border-radius: 8px
+  - Padding: 24px
+  - Box-shadow: Low elevation
+  - Margin top: 24px
+
+- **Financial Report Specifics**:
+  - Revenue breakdown chart (bar or pie)
+    - Bar chart for time series
+    - Pie chart for category distribution
+    - Colors: Different shades of primary color
+    - Legend showing categories
+  - Expense breakdown chart (bar or pie)
+    - Similar to revenue chart but different color scheme
+    - Colors: Different shades of secondary color
+  - Profit calculation
+    - Formula: Revenue - Expenses
+    - Highlighted section
+  - Table with revenue, expenses, profit columns
+    - Date/period column first
+    - Currency formatting for amounts
+    - Subtotals for groups
+    - Grand total at bottom
+  - Grouping by day, week, month, property
+    - Header rows for each group
+    - Background: Light gray
+    - Font weight: 600
+
+- **Occupancy Report Specifics**:
+  - Occupancy rate line chart over time
+    - Y-axis: Percentage (0-100%)
+    - X-axis: Dates
+    - Line color: Primary color
+    - Reference line at target occupancy
+  - Heatmap calendar view (optional)
+    - Color intensity represents occupancy
+    - Hover shows exact percentage
+    - Legend explaining colors
+  - Average rate calculation
+    - Average price per room per night
+    - Currency formatting
+  - RevPAR calculation
+    - Revenue Per Available Room
+    - Formula: (Occupancy Rate × Average Daily Rate)
+    - Currency formatting
+  - Table with dates, rooms, occupancy, rate columns
+    - Date/period column first
+    - Percentage formatting for occupancy
+    - Currency formatting for rates
+    - Highlighting for high/low values
+  - KPI summary box
+    - Average Occupancy
+    - Average Rate
+    - RevPAR
+    - Year-over-year comparisons
+
+- **Owner Statement Specifics**:
+  - Owner selection required
+    - Dropdown if generating for specific owner
+    - Multiple selection for batch processing
+  - Revenue breakdown by property/room
+    - Table showing each property/room
+    - Booking details (dates, guests)
+    - Revenue per booking
+  - Commission calculations
+    - Formula: Revenue × Commission Rate
+    - Subtracted from owner earnings
+  - Payment history
+    - Previous payments made
+    - Outstanding balance
+  - Balance due/paid
+    - Clearly highlighted amount
+    - Due date if applicable
+  - Signature area for official statements
+    - Space for digital signature
+    - Date and name fields
+  - Letter format option
+    - Formal letter layout
+    - Company letterhead
+    - Contact information
+
+- **Action Buttons**:
+  - Export to PDF button
+    - Style: Outline
+    - Icon: FileDown
+    - Text: "Export PDF"
+  - Export to Excel button
+    - Style: Outline
+    - Icon: FileDown
+    - Text: "Export Excel"
+  - Print button
+    - Style: Outline
+    - Icon: Printer
+    - Text: "Print"
+  - Email Report button
+    - Style: Outline
+    - Icon: Mail
+    - Text: "Email"
+    - Opens modal
+  - Schedule Report button
+    - Style: Secondary
+    - Icon: Clock
+    - Text: "Schedule"
+    - Opens modal
+  - Position: Below report
+  - Display: flex
+  - Gap: 12px
+  - Justify: flex-end
+  - Margin top: 16px
+
+- **Report Scheduling Modal**:
+  - Title: "Schedule Report"
+  - Form fields:
+    - Report name input
+      - Type: text
+      - Placeholder: "Enter report name"
+    - Frequency dropdown
+      - Options: Daily, Weekly, Monthly
+      - Placeholder: "Select frequency"
+    - Recipients input
+      - Type: text (multiple emails)
+      - Placeholder: "Enter email addresses"
+      - Validation: Email format
+    - Start date picker
+      - Type: date
+      - Format: DD/MM/YYYY
+      - Default: Today
+    - End date picker or "Ongoing" toggle
+      - Type: date
+      - Format: DD/MM/YYYY
+      - Disabled if ongoing
+    - Format selection (PDF, Excel)
+      - Type: radio
+      - Default: PDF
+  - Action buttons:
+    - Cancel (outline)
+    - Schedule Report (primary)
+  - Width: 500px
+  - Padding: 24px
+  - Border-radius: 8px
+  - Gap between fields: 16px
+
+- **Responsive Behavior**:
+  - Desktop: Full report layout
+  - Tablet: Same layout with smaller charts
+  - Mobile: Stacked layout, chart then table
+  - Horizontal scroll for tables on small screens
+  - Report type tabs become scrollable on mobile
+  - Configuration controls stack vertically on mobile
+
+### Audit Logs Page
+- **Route**: /audit-logs
+- **Layout**:
+  - Full width content area
+  - Filter section at top
+  - Logs table below
+  - Pagination at bottom
+
+- **Page Header**:
+  - Title: "Audit Logs"
+  - Subtitle: "Track all system activity and user actions"
+  - "Export Logs" button (outline style, icon: FileDown)
+  - Margin bottom: 24px
+  - Display: flex
+  - Justify: space-between
+  - Align: center
+
+- **Filter Section**:
+  - Card with white background
+  - Border: 1px solid #E2E8F0
+  - Border radius: 8px
+  - Padding: 16px
+  - Contains:
+    - Search input (icon: Search)
+      - Placeholder: "Search logs..."
+      - Width: 100% to fit container
+    - Log type filter dropdown
+      - Options: All, Authentication, Booking, User, System, Settings
+      - Label: "Log Type"
+    - Date range picker
+      - Type: date range
+      - Format: DD/MM/YYYY - DD/MM/YYYY
+      - Default: Last 7 days
+    - User filter dropdown
+      - Options: All users or specific ones
+      - Placeholder: "All Users"
+    - Clear filters button
+  - Flex layout that stacks on mobile
+  - Gap between elements: 16px
+  - Border-radius: 6px for all inputs
+  - Height: 40px for all inputs
+
+- **Logs Table**:
+  - Table with columns:
+    - Timestamp (sortable)
+    - User (with avatar)
+    - Event Type (with badge)
+    - Description
+    - IP Address
+    - Actions (view details)
+  - Row hover: Light background color
+  - Event type badges:
+    - Authentication: Purple
+    - Booking: Green
+    - User: Blue
+    - System: Gray
+    - Settings: Yellow
+  - Action buttons:
+    - View: Icon button, Eye
+  - Monospace font for timestamps and IP addresses
+  - Empty state: "No logs found"
+  - Table:
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Overflow: hidden
+    - Cell padding: 12px 16px
+    - Header background: #F9FAFB
+    - Row border-top: 1px solid #E2E8F0
+    - First row no border
+  - Log entries expandable for more details
+    - Click row to expand
+    - Additional details shown below row
+    - Background: Light gray
+    - Padding: 16px
+    - Border-top: 1px solid #E2E8F0
+
+- **Log Detail Modal**:
+  - Title: "Log Details"
+  - Content:
+    - All fields from table row
+    - Additional context data in JSON format
+    - User agent string
+    - Session ID
+    - Related entity ID (if applicable)
+    - Previous and new values (if changed)
+  - Action button: Close
+  - Formatted code block for JSON data
+    - Font: monospace
+    - Background: Light gray
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 4px
+    - Padding: 12px
+  - Copy to clipboard button
+    - Style: Ghost
+    - Icon: Copy
+    - Position: Top right of code block
+  - Width: 600px
+  - Max-height: 80vh
+  - Overflow: auto
+  - Padding: 24px
+  - Border-radius: 8px
+
+- **Pagination**:
+  - Current page indicator
+  - Previous/Next buttons
+  - Page number buttons
+  - "Showing X-Y of Z results" text
+  - Centered at bottom of page
+  - Margin top: 24px
+  - Button size: 32px by 32px
+  - Active page: Primary background, white text
+  - Inactive page: White background, dark text
+
+- **Export Options Modal**:
+  - Title: "Export Logs"
+  - Form fields:
+    - Date range picker
+      - Type: date range
+      - Format: DD/MM/YYYY - DD/MM/YYYY
+      - Default: Current filter selection
+    - Log types multiselect
+      - Options: All types with checkboxes
+      - Default: All selected
+    - Users multiselect
+      - Options: All users with checkboxes
+      - Default: All selected
+    - Format selection (CSV, JSON)
+      - Type: radio
+      - Default: CSV
+    - Include details checkbox
+      - Label: "Include detailed information"
+      - Default: checked
+  - Action buttons:
+    - Cancel (outline)
+    - Export (primary)
+  - Width: 500px
+  - Padding: 24px
+  - Border-radius: 8px
+  - Gap between fields: 16px
+
+- **Responsive Behavior**:
+  - Desktop: Full table with all columns
+  - Tablet: Horizontal scroll for table
+  - Mobile: Simplified table with fewer columns
+  - Expandable rows for mobile to see all data
+  - Filters stack vertically on mobile
+
+### Settings Pages
+- **Route**: /settings
+- **Layout**:
+  - Sidebar navigation on the left
+  - Settings content on the right
+
+- **Page Header**:
+  - Title: "Settings"
+  - Subtitle: "Manage application settings and configurations"
+  - Margin bottom: 24px
+
+- **Settings Sidebar**:
+  - List of settings categories:
+    - General
+    - Email Templates
+    - SMS Templates
+    - Room Types
+    - Properties
+    - Payment Methods
+    - Users & Permissions
+    - Integrations
+  - Active category highlighted
+  - Icon for each category
+  - Sticky position on desktop
+  - Horizontal tabs on mobile
+  - Background: Light gray (#F7F9FC)
+  - Border right: 1px solid #E2E8F0
+  - Width: 240px on desktop
+  - Padding: 16px
+  - Each item:
+    - Display: flex
+    - Align: center
+    - Gap: 12px
+    - Icon: Relevant icon from Lucide
+    - Padding: 12px 16px
+    - Border-radius: 6px
+    - Active: Light primary background, primary text
+    - Hover: Light gray background
+    - Cursor: pointer
+
+- **Settings Content Area**:
+  - White background
+  - Padding: 24px
+  - Contains settings forms for selected category
+  - Border: 1px solid #E2E8F0
+  - Border-radius: 8px
+  - Box-shadow: Low elevation
+  - Flexible height based on content
+  - Save button at bottom (primary variant)
+    - Text: "Save Changes"
+    - Position: Bottom right
+    - Margin top: 24px
+    - Loading state when saving
+
+- **General Settings**:
+  - Form sections:
+    - Company Information:
+      - Company name input
+      - Address inputs
+      - Contact details
+      - Logo upload
+        - Image preview
+        - Upload button
+        - Remove button
+    - Regional Settings:
+      - Timezone dropdown
+      - Date format dropdown
+      - Currency dropdown
+      - First day of week dropdown
+    - Booking Settings:
+      - Default check-in time
+      - Default check-out time
+      - Booking reference format
+      - Cancellation policy textarea
+    - Notifications:
+      - Email notification toggles
+      - SMS notification toggles
+  - Two column layout on desktop, single on mobile
+  - Grid template columns: repeat(2, 1fr)
+  - Grid column gap: 24px
+  - Grid row gap: 16px
+  - Section headers:
+    - Font size: 16px
+    - Font weight: 600
+    - Margin bottom: 16px
+    - Border-bottom: 1px solid #E2E8F0
+    - Padding-bottom: 8px
+
+- **Email Templates**:
+  - Template list on the left
+    - Items: Booking Confirmation, Cancellation, Check-in Reminder, etc.
+    - Active template highlighted
+    - List styling:
+      - Border right: 1px solid #E2E8F0
+      - Width: 240px on desktop
+      - Each item:
+        - Padding: 12px 16px
+        - Border-radius: 6px
+        - Active: Light primary background, primary text
+        - Hover: Light gray background
+  - Template editor on the right:
+    - Subject line input
+      - Type: text
+      - Full width
+      - Label: "Subject"
+    - Rich text editor for body
+      - Height: 400px
+      - Border: 1px solid #E2E8F0
+      - Border-radius: 6px
+      - Toolbar with formatting options
+    - Variables button (inserts placeholders)
+      - Style: Outline
+      - Position: Below editor
+      - Dropdown with variable options
+    - Preview button
+      - Style: Secondary
+      - Opens preview in new tab/modal
+    - Test send button
+      - Style: Outline
+      - Opens modal to enter test email
+  - Split view on desktop, stacked on mobile
+  - Desktop layout:
+    - Display: grid
+    - Grid template columns: 240px 1fr
+    - Gap: 24px
+  - Mobile layout:
+    - Display: flex
+    - Flex direction: column
+    - Template list becomes horizontal tabs
+
+- **SMS Templates**:
+  - Similar to Email Templates but simpler
+  - Character count indicator
+    - Position: Below text area
+    - Format: "0/160 characters"
+    - Color changes when approaching limit
+  - No rich text, plain text only
+    - Simple textarea
+    - Height: 160px
+  - Same variables system
+    - Dropdown of available variables
+    - Insert at cursor position
+  - Same overall layout as Email Templates
+
+- **Room Types**:
+  - Table of room types:
+    - Name
+    - Description
+    - Base Rate
+    - Occupancy
+    - Amenities
+    - Actions (edit, delete)
+  - "Add Room Type" button
+    - Style: Primary
+    - Icon: Plus
+    - Position: Top right
+  - Table styling consistent with other tables
+  - Form for creating/editing room types:
+    - Name input
+      - Type: text
+      - Label: "Room Type Name"
+    - Description textarea
+      - Rows: 3
+      - Label: "Description"
+    - Base rate input
+      - Type: number
+      - Prefix: $
+      - Label: "Base Rate"
+    - Max occupancy input
+      - Type: number
+      - Label: "Max Occupancy"
+    - Amenities checkboxes
+      - Grid layout
+      - Multiple selection
+    - Image uploads
+      - Multiple file upload
+      - Preview thumbnails
+      - Drag to reorder
+  - Modal for add/edit:
+    - Width: 500px
+    - Title: "Add Room Type" or "Edit Room Type"
+    - Same form fields as above
+    - Cancel and Save buttons
+
+- **Properties**:
+  - Table of properties:
+    - Name
+    - Address
+    - Room Count
+    - Owner
+    - Actions (edit, delete)
+  - "Add Property" button
+    - Style: Primary
+    - Icon: Plus
+    - Position: Top right
+  - Table styling consistent with other tables
+  - Form for creating/editing properties:
+    - Name input
+      - Type: text
+      - Label: "Property Name"
+    - Address inputs
+      - Multiple fields for address parts
+      - Labels for each part
+    - Contact details
+      - Email, phone inputs
+      - Labels for each
+    - Image uploads
+      - Multiple file upload
+      - Preview thumbnails
+      - Featured image selection
+    - Google Maps integration (optional)
+      - Map preview
+      - Pin position
+      - Coordinate inputs
+  - Modal for add/edit:
+    - Width: 600px
+    - Title: "Add Property" or "Edit Property"
+    - Same form fields as above
+    - Cancel and Save buttons
+
+- **Payment Methods**:
+  - List of payment methods with toggle switches
+    - Credit Card
+    - Bank Transfer
+    - Cash
+    - PayPal
+    - Others
+  - Toggle styling:
+    - Width: 48px
+    - Height: 24px
+    - Border-radius: 12px
+    - Thumb diameter: 20px
+    - On color: Primary
+    - Off color: Gray
+  - Configuration options specific to each payment type
+    - Credit Card:
+      - Processor dropdown (Stripe, PayPal, etc.)
+      - API credentials
+      - Test mode toggle
+    - Bank Transfer:
+      - Bank details inputs
+      - Instructions textarea
+    - Cash:
+      - Receipt generation toggle
+      - Instructions textarea
+  - "Add Payment Method" button
+    - Style: Secondary
+    - Opens modal with options
+  - Edit and Delete actions
+    - Small buttons within each method section
+  - Clean, toggle-based interface for quick changes
+    - Card for each method
+    - Header with name and toggle
+    - Body with configuration options
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Margin bottom: 16px
+  - Form for adding payment gateway credentials
+    - API key inputs
+    - Secret inputs (masked)
+    - Environment selection
+  - Test connection button for payment methods
+    - Style: Outline
+    - Shows spinner when testing
+    - Success/failure message after test
+  - Save and Cancel buttons
+    - Position: Bottom right
+    - Margin top: 24px
+    - Gap: 12px
+
+- **Users & Permissions**:
+  - Role management:
+    - Table of roles
+      - Name
+      - Description
+      - User Count
+      - Actions
+    - "Add Role" button
+      - Style: Secondary
+      - Opens modal
+    - Permission matrix editor
+      - Grid of permissions vs. actions
+      - Checkboxes for each combination
+  - Permission assignments:
+    - Tree view of all permissions
+    - Group by module
+    - Checkboxes for read/write/delete
+    - Toggle all option per group
+  - Tabs for switching between views:
+    - Roles
+    - Permissions
+    - Settings
+  - Add Role modal:
+    - Name input
+    - Description textarea
+    - Permission selection
+    - Base role to copy from
+
+- **Integrations**:
+  - List of available integrations:
+    - Channel Manager
+    - Accounting Software
+    - Email Marketing
+    - etc.
+  - Each integration has:
+    - Logo and name
+      - Logo size: 48px by 48px
+      - Name: 16px, semibold
+    - Status indicator
+      - Connected: Green dot
+      - Not connected: Gray dot
+    - Configure button
+      - Style: Secondary, small
+      - Opens configuration modal
+    - Enable/disable toggle
+      - Same toggle styling as payment methods
+  - Card for each integration:
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Padding: 16px
+    - Margin bottom: 16px
+    - Display: flex
+    - Justify: space-between
+    - Align: center
+  - Configuration modal specific to each integration
+    - API credentials
+    - Sync options
+    - Mapping settings
+
+- **Responsive Behavior**:
+  - Desktop: Sidebar + content layout
+  - Tablet: Collapsible sidebar, full content
+  - Mobile: Tab navigation, stacked content
+  - Settings sidebar becomes horizontal tabs on mobile
+  - Two column layouts become single column
+  - Modals remain centered but with reduced width
+
+## Owner Portal Pages
+
+### Owner Login Page
+- **Route**: /owner/login
+- **Layout**:
+  - Centered card on full page background
+  - Logo at top
+
+- **Login Card**:
+  - White background
+  - Border radius: 12px
+  - Shadow: Medium elevation
+  - Width: 400px max
+  - Padding: 32px
+  - Text align: center for header, left for form
+
+- **Form Elements**:
+  - Title: "Owner Portal"
+    - Font size: 24px
+    - Font weight: 700
+    - Text align: center
+    - Margin bottom: 8px
+  - Subtitle: "Property Owner Access"
+    - Font size: 14px
+    - Color: Gray
+    - Text align: center
+    - Margin bottom: 24px
+  - Email input
+    - Label: "Email"
+    - Placeholder: "you@example.com"
+    - Full width
+    - Margin bottom: 16px
+  - Password input
+    - Label: "Password"
+    - Placeholder: "••••••••"
+    - Full width
+    - Margin bottom: 8px
+  - "Forgot password?" link
+    - Position: Top right of password field
+    - Size: 12px
+    - Color: Primary
+  - "Log in" button
+    - Style: Primary
+    - Full width
+    - Margin top: 24px
+  - "Login to Staff Portal" link at bottom
+    - Size: 14px
+    - Color: Gray with primary link
+    - Margin top: 16px
+    - Text align: center
+
+- **Styling**:
+  - Background: Light gray or subtle pattern
+    - Color: #F7F9FC
+  - Logo size: 120px width
+    - Margin bottom: 32px
+    - Center aligned
+  - Input margin bottom: 16px
+  - Button height: 40px
+  - Border radius for inputs and button: 6px
+  - Form layout:
+    - Display: flex
+    - Flex direction: column
+    - Width: 100%
+
+### Owner Dashboard
+- **Route**: /owner/dashboard
+- **Layout**:
+  - Similar to main dashboard but simplified
+  - Owner-specific sidebar navigation
+
+- **Stats Section**:
+  - Five card stats in a grid
+  - Cards show:
+    - Available Rooms
+    - Today's Check-ins
+    - Today's Check-outs
+    - Occupancy Rate
+    - Monthly Revenue
+  - Each styled similar to main dashboard stats
+  - Grid template columns: repeat(auto-fit, minmax(240px, 1fr))
+  - Grid gap: 16px
+  - Margin bottom: 24px
+
+- **Quick Actions**:
+  - Grid of button shortcuts:
+    - View Bookings
+    - Check Availability
+    - Cleaning Status
+    - Reports
+  - Each button has icon and text
+  - Equal size grid cells
+  - Outline style buttons
+  - Grid template columns: repeat(2, 1fr)
+  - Grid gap: 16px
+  - Margin bottom: 24px
+  - Each button:
+    - Height: 80px
+    - Display: flex
+    - Flex direction: column
+    - Justify: center
+    - Align: center
+    - Gap: 8px
+    - Icon size: 24px
+
+- **Charts Section**:
+  - Occupancy chart (similar to main dashboard)
+  - Limited to owner's properties only
+  - Chart height: 320px
+  - Margin bottom: 24px
+  - Border: 1px solid #E2E8F0
+  - Border-radius: 8px
+  - Padding: 24px
+  - Background: white
+  - Box-shadow: Low elevation
+
+- **Today's Activity**:
+  - Split cards for check-ins and check-outs
+  - Limited to owner's properties only
+  - Styled similar to main dashboard
+  - Grid template columns: repeat(2, 1fr)
+  - Grid gap: 24px
+  - Each card:
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Padding: 24px
+    - Background: white
+    - Box-shadow: Low elevation
+    - Header:
+      - Font size: 16px
+      - Font weight: 600
+      - Margin bottom: 16px
+    - Content:
+      - List style none
+      - Each item:
+        - Padding: 8px 0
+        - Border-bottom: 1px solid #F9FAFB
+        - Last item no border
+
+- **Responsive Behavior**:
+  - Desktop: Full grid layout
+  - Tablet/Mobile: Stacked cards
+  - Stats cards: 2 columns on tablet, 1 on mobile
+  - Activity cards: 1 column on mobile
+  - Reduced padding on mobile: 16px
+
+### Owner Bookings
+- **Route**: /owner/bookings
+- **Layout**:
+  - Similar to main bookings page but simplified
+  - Limited to owner's properties only
+  - Read-only (no edit/add functionality)
+
+- **Table Columns**:
+  - Guest
+  - Property
+  - Room
+  - Check-in
+  - Check-out
+  - Amount
+  - Status
+  - Action (view only)
+
+- **Status Badges**:
+  - Same color coding as main system
+  - Fewer status options
+  - Badge styling:
+    - Font size: 12px
+    - Padding: 2px 8px
+    - Border-radius: 9999px
+    - Text color: white
+    - Colors match main system
+
+- **Filter Options**:
+  - Limited compared to main system
+  - Search input
+  - Status filter
+  - Date filter
+  - No bulk actions
+
+- **View Button**:
+  - Style: Ghost
+  - Icon: ArrowUpRight
+  - Opens booking details view
+  - Size: Small
+
+- **Table Styling**:
+  - Same as main bookings table
+  - Border: 1px solid #E2E8F0
+  - Border-radius: 8px
+  - Header background: #F9FAFB
+  - Row hover: Light background
+  - Cell padding: 12px 16px
+
+### Owner Availability Calendar
+- **Route**: /owner/availability
+- **Layout**:
+  - Date selection on left
+  - Room status grid on right
+  - Grid template columns: 1fr 2fr
+  - Grid gap: 24px
+
+- **Date Selector**:
+  - Month calendar for picking date
+  - Current date highlighted
+  - Clean, simple design
+  - Uses react-day-picker
+  - Styling:
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Padding: 16px
+    - Day size: 36px
+    - Selected day: Primary color
+    - Today: Border 1px solid primary
+    - Day hover: Light primary background
+
+- **Room Status Grid**:
+  - Cards showing status for each room
+  - Color coded:
+    - Available: Green (#10B981 at 20% opacity)
+    - Booked: Red (#EF4444 at 20% opacity)
+    - Maintenance: Yellow (#F59E0B at 20% opacity)
+  - Room number and status text
+  - Grid layout (3 columns on desktop)
+  - Limited to owner's properties only
+  - Grid template columns: repeat(auto-fill, minmax(200px, 1fr))
+  - Grid gap: 16px
+  - Each card:
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Padding: 16px
+    - Room number: 16px, semibold
+    - Status text: 14px
+    - Height: 100px
+    - Display: flex
+    - Flex direction: column
+    - Justify: space-between
+
+- **Property Filter**:
+  - Dropdown for selecting property
+  - Shows only owner's properties
+  - Full width above grid
+  - Margin bottom: 16px
+  - Height: 40px
+
+- **Responsive Behavior**:
+  - Desktop: Side by side layout
+  - Tablet/Mobile: Stacked layout
+  - Date picker becomes smaller on mobile
+  - Room grid reduces columns on smaller screens
+
+### Owner Cleaning Status
+- **Route**: /owner/cleaning
+- **Layout**:
+  - Simple table layout
+  - Limited to owner's properties only
+  - Read-only
+
+- **Table Columns**:
+  - Property
+  - Room
+  - Assigned To
+  - Date
+  - Status
+
+- **Status Badges**:
+  - Completed: Green
+  - In Progress: Blue
+  - Scheduled: Purple
+  - Delayed: Red
+  - Same styling as main system
+  - Badge styling:
+    - Font size: 12px
+    - Padding: 2px 8px
+    - Border-radius: 9999px
+    - Text color: white
+    - Border: 1px solid slightly darker shade
+
+- **Filter Options**:
+  - Property dropdown (if owner has multiple)
+  - Status dropdown
+  - Date picker
+  - Simple row of filters
+  - Margin bottom: 16px
+  - Gap: 16px
+
+- **Table Styling**:
+  - Same as main cleaning status table
+  - Border: 1px solid #E2E8F0
+  - Border-radius: 8px
+  - Header background: #F9FAFB
+  - Row hover: Light background
+  - Cell padding: 12px 16px
+  - Font size: 14px
+
+- **Responsive Behavior**:
+  - Desktop: Full table
+  - Tablet: Horizontal scroll for table
+  - Mobile: Card view instead of table
+  - Cards on mobile:
+    - Room and property prominently displayed
+    - Date and assigned to below
+    - Status badge
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Padding: 16px
+    - Margin bottom: 16px
+
+### Owner Reports
+- **Route**: /owner/reports
+- **Layout**:
+  - Two charts at top
+  - Data tables below
+
+- **Charts**:
+  - Monthly Revenue & Occupancy (bar chart)
+    - Bar chart showing revenue amounts
+    - Line overlay showing occupancy percentage
+    - X-axis: Months
+    - Y-axis: Amount (left), Percentage (right)
+    - Colors: Bars in primary, line in secondary
+    - Height: 320px
+    - Margin bottom: 24px
+    - Border: 1px solid #E2E8F0
+    - Border-radius: 8px
+    - Padding: 24px
+    - Background: white
+    - Box-shadow: Low elevation
+  - Booking Sources (pie chart)
+    - Shows distribution of bookings by source
+    - Sources: Direct, Booking.com, Airbnb, etc.
+    - Legend with percentages
+    - Colors: Different shades of primary and secondary
+    - Height: 320px
+    - Margin bottom: 24px
+    - Same card styling as above
+
+- **Data Display**:
+  - Simplified from main system
+  - Focus on revenue and occupancy
+  - Tables with key metrics
+  - Export options available
+  - Table styling consistent with other tables
+  - Border: 1px solid #E2E8F0
+  - Border-radius: 8px
+  - Header background: #F9FAFB
+  - Row hover: Light background
+  - Cell padding: 12px 16px
+
+- **Filter Options**:
+  - Date range picker (Month, Quarter, Year)
+  - Property filter (if multiple)
+  - Simple row of filters
+  - Margin bottom: 16px
+  - Gap: 16px
+
+- **Export Buttons**:
+  - PDF export button
+  - Excel export button
+  - Position: Top right
+  - Style: Outline
+  - Icons: FileText, FileSpreadsheet
+  - Size: Small
+
+- **Responsive Behavior**:
+  - Desktop: Grid layout for charts
+  - Tablet/Mobile: Stacked charts and tables
+  - Charts maintain aspect ratio but get narrower
+  - Tables scroll horizontally on small screens
+
+## Global Components & Cross-cutting Features
+
+### Notifications System
+- Toast notifications appear in bottom-right corner
+- Types: success, error, warning, info
+- Auto-dismiss after 5 seconds
+- Stacking when multiple appear
+- Can be manually dismissed
+- Animation: Slide in from right
+- Styling:
+  - Border-radius: 6px
+  - Padding: 12px 16px
+  - Shadow: Medium
+  - Width: Max 400px
+  - Icon: Left side, specific to type
+  - Close button: Top right, X icon
+  - Success: Green background
+  - Error: Red background
+  - Warning: Yellow background
+  - Info: Blue background
+  - Z-index: 50
+
+### Confirmation Dialogs
+- Centered modal design
+- Title describing the action
+- Message explaining consequences
+- Cancel button (outline variant)
+- Confirm button (primary or destructive variant)
+- Backdrop overlay that blocks interaction
+- Animation: Fade in and slight scale up
+- Styling:
+  - Width: 400px
+  - Padding: 24px
+  - Border-radius: 8px
+  - Background: White
+  - Shadow: High
+  - Title: 18px, 600 weight
+  - Message: 14px, normal weight
+  - Buttons: Right aligned
+  - Gap between buttons: 12px
+  - Z-index: 100
+
+### Loading States
+- Page loading: Centered spinner
+- Table loading: Skeleton rows
+- Button loading: Spinner replacing text
+- Form submission: Disabled inputs + button spinner
+- Primary color for spinners
+- Animation: Rotating animation for spinners, pulse for skeletons
+- Styling:
+  - Spinner size: 24px
+  - Spinner stroke: 2px
+  - Spinner color: Primary or white
+  - Skeleton background: #F9FAFB
+  - Skeleton border-radius: Same as component
+  - Animation duration: 1.5s
+  - Animation timing: ease-in-out, infinite
+
+### Error Handling
+- Form field errors: Red text below field, red border
+- Page errors: Full page error message with retry option
+- Network errors: Toast notification
+- Validation errors: Inline per-field messages
+- API errors: Toast with error message
+- Styling:
+  - Error text color: #ea384c
+  - Font size: 12px
+  - Input border color when error: #ea384c
+  - Spacing between field and error: 4px
+  - Full page error:
+    - Center aligned
+    - Icon: XCircle, size 48px
+    - Title: 24px, 600 weight
+    - Message: 16px, normal weight
+    - Retry button: Primary variant
+
+### Breadcrumbs Navigation
+- Shows path from home to current page
+- Links to parent pages
+- Current page (non-clickable)
+- Separator: Forward slash or chevron
+- Position: Below page title
+- Font size: 14px
+- Color: Muted text color
+- Styling:
+  - Display: flex
+  - Align items: center
+  - Gap: 8px
+  - Separator color: Light gray
+  - Current page: Normal text, no hover
+  - Links: Hover underline, primary color
+  - Margin bottom: 16px
+
+### Tooltips
+- Appears on hover over elements
+- Small arrow pointing to element
+- Dark background with white text
+- Border radius: 4px
+- Padding: 8px 12px
+- Max width: 200px
+- Position: Above element by default
+- Animation: Fade in
+- Styling:
+  - Background: #222222
+  - Text color: White
+  - Font size: 12px
+  - Z-index: 40
+  - Arrow size: 8px
+  - Delay before showing: 300ms
+  - Transition: 0.2s ease
+
+### Context Menus
+- Appears on right click or from action button
+- White background
+- Border: 1px solid #E2E8F0
+- Border radius: 6px
+- Shadow: Medium elevation
+- Item padding: 8px 12px
+- Hover effect on items: Light gray background
+- Icons for common actions
+- Keyboard navigation support
+- Styling:
+  - Width: 200px
+  - Z-index: 40
+  - Item height: 32px
+  - Item hover: #F9FAFB
+  - Divider: 1px solid #F9FAFB
+  - Icons: Left aligned, 16px
+  - Text: 14px
+  - Animation: Fade in, 0.2s
+
+### File Upload Component
+- Drag and drop zone
+- File selection button
+- Progress indicator during upload
+- Preview for images
+- File type icons for non-images
+- File size limit warning
+- Multi-file support
+- Delete option for uploaded files
+- Styling:
+  - Border: 2px dashed #CBD5E0
+  - Border-radius: 8px
+  - Padding: 32px
+  - Text align: center
+  - Icon: Upload, size 48px
+  - Text: 14px, center
+  - Hover state: Border color darker
+  - Active state (dragging): Border color primary
+  - File preview:
+    - Size: 80px by 80px
+    - Border-radius: 4px
+    - Object-fit: cover
+    - Delete button: Top right, X icon
+  - Progress bar:
+    - Height: 4px
+    - Border-radius: 2px
+    - Background: Primary color
+    - Track: Light gray
+
+### Date Range Picker
+- Uses react-day-picker
+- Two month display
+- Range selection with start/end highlighting
+- Preset ranges (Today, Yesterday, This Week, etc.)
+- Custom range input
+- Clear selection option
+- Responsive design that works on mobile
+- Styling:
+  - Background: White
+  - Border: 1px solid #E2E8F0
+  - Border-radius: 8px
+  - Padding: 16px
+  - Shadow: Medium
+  - Day size: 36px
+  - Selected range: Light primary background
+  - Range start/end: Primary background, white text
+  - Preset buttons: Outline style, small
+  - Today: Border 1px solid primary
+  - Day hover: Light primary background
+  - Animation: Fade in, 0.2s
+  - Z-index: 40
+
+### Rich Text Editor
+- Used in email templates and notes
+- Toolbar with formatting options
+- Basic formatting (bold, italic, underline)
+- Lists (ordered, unordered)
+- Links
+- Image insertion
+- Clean, minimal design
+- Responsive toolbar that collapses on mobile
+- Styling:
+  - Border: 1px solid #E2E8F0
+  - Border-radius: 6px
+  - Padding: 8px
+  - Toolbar:
+    - Border-bottom: 1px solid #F9FAFB
+    - Padding-bottom: 8px
+    - Margin-bottom: 8px
+    - Button size: 28px
+    - Button hover: Light gray background
+    - Button active: Light primary background
+    - Separator: 1px solid #F9FAFB
+  - Content area:
+    - Min-height: 200px
+    - Padding: 8px
+    - Font size: 14px
+    - Line height: 1.6
+
+### Print Layouts
+- Clean design optimized for printing
+- Removes unnecessary UI elements
+- Adds branding and timestamp
+- Page breaks at logical points
+- Adjusts font sizes for readability
+- Shows full data (expanded tables)
+- Styling:
+  - Margins: 20mm
+  - Font size: 12pt
+  - Line height: 1.5
+  - Links: No underline, dark text
+  - Tables: Borders visible, collapse borders
+  - Header: Company logo, report title
+  - Footer: Page number, date, company info
+  - Background colors removed
+  - Images: Max width 100%
+
+### Export Functionality
+- Supports PDF, Excel, CSV formats
+- Progress indicator during generation
+- Download prompt or direct download
+- Option to include/exclude specific data
+- Branding on exported documents
+- Formatted for readability
+- Styling (PDF):
+  - Headers: Primary color
+  - Title page with logo
+  - Page numbers
+  - Table of contents for large reports
+  - Footer with company info
+  - Data tables with alternating row colors
+  - Charts included as images
