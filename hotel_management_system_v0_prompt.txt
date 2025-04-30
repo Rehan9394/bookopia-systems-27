@@ -1,0 +1,1374 @@
+
+# Hotel Management System - Complete Blueprint for V0.dev
+
+## Overview
+Create a comprehensive hotel management system with a modern, professional UI using Next.js. The application should have a responsive design that works well on desktop and mobile devices. The system needs to manage bookings, rooms, expenses, cleaning status, users, owners, and provide reporting capabilities with audit logs.
+
+## Color Palette
+- Primary Blue: `#3B82F6` (tailwind blue-500) - Use for primary buttons, active states, and links
+- Primary Blue Hover: `#2563EB` (tailwind blue-600) - Hover state for primary buttons
+- Primary Blue Light: `#DBEAFE` (tailwind blue-100) - Background for highlighted items
+- Secondary Gray: `#F3F4F6` (tailwind gray-100) - For backgrounds, cards, and secondary elements
+- Secondary Gray Dark: `#9CA3AF` (tailwind gray-400) - For borders and dividers
+- Success Green: `#10B981` (tailwind green-500) - For success states, confirmations
+- Success Green Light: `#D1FAE5` (tailwind green-100) - Background for success states
+- Warning Amber: `#F59E0B` (tailwind amber-500) - For warning states, pending actions
+- Warning Amber Light: `#FEF3C7` (tailwind amber-100) - Background for warning states
+- Error Red: `#EF4444` (tailwind red-500) - For error states, critical actions
+- Error Red Light: `#FEE2E2` (tailwind red-100) - Background for error states
+- Info Blue: `#3B82F6` (tailwind blue-500) - For informational states
+- Info Blue Light: `#DBEAFE` (tailwind blue-100) - Background for informational states
+- White: `#FFFFFF` - Background for cards, modals, content areas
+- Off-White: `#F9FAFB` (tailwind gray-50) - Page backgrounds
+- Light Gray: `#E5E7EB` (tailwind gray-200) - Borders, dividers, inactive states
+- Medium Gray: `#6B7280` (tailwind gray-500) - Secondary text, icons
+- Dark Gray: `#374151` (tailwind gray-700) - Primary text
+- Black: `#111827` (tailwind gray-900) - Headings, important text
+
+## Typography
+- Primary Font: 'Inter', sans-serif
+- Heading 1: 30px (1.875rem) - Page titles
+- Heading 2: 24px (1.5rem) - Section titles
+- Heading 3: 20px (1.25rem) - Card titles, modal headers
+- Body Large: 16px (1rem) - Primary text
+- Body Regular: 14px (0.875rem) - Secondary text, form labels
+- Body Small: 12px (0.75rem) - Captions, helper text
+- Micro: 10px (0.625rem) - Badges, tags
+- Font Weights: Regular (400), Medium (500), Semibold (600), Bold (700)
+- Line Heights: Tight (1.25) for headings, Regular (1.5) for body text, Loose (1.75) for paragraphs
+
+## Global Layout
+- Create a responsive layout with:
+  - Header (h-16, fixed top, white background, border-b, px-6)
+  - Sidebar (w-64 on desktop, collapsible on mobile)
+  - Content Area (p-6, bg-background)
+- Sidebar should collapse on smaller screens and expand via hamburger menu
+- Maximum content width of 1600px with mx-auto
+- Subtle fade-in animations for content when pages load
+
+## Authentication Pages
+
+### Staff Login
+- Centered card design on a full-page background
+- Card with white background, rounded-xl corners, shadow-lg
+- Logo positioned at top center with h-16 size and mb-8 spacing
+- Form width of 24rem (max-w-md)
+- Input fields for email and password
+- "Forgot password" link below password field (text-sm, text-primary, hover:underline)
+- Primary blue login button spanning full width
+- Link to switch to Owner Login below the card (mt-4, text-sm)
+- Loading state indicator on login button
+- Error message display for invalid credentials
+- Page should have subtle background pattern or gradient
+- All form controls should have proper labeling and validation feedback
+
+### Owner Login
+- Similar to Staff Login but with distinct branding
+- Text saying "Owner Portal" above login card
+- Different background color/image to distinguish from staff login
+- Same form structure but routes to Owner Dashboard on success
+- Link to switch to Staff Login below card
+
+## Staff Portal Pages
+
+### Dashboard
+- H1 title "Dashboard" (text-3xl font-bold) with welcome subtitle
+- Four Stat Cards in grid layout (grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4)
+  1. Available Rooms Card with:
+     - BedDouble icon
+     - Value "12" (text-2xl font-bold)
+     - Label "Available Rooms"
+     - Trend indicator "+2 from yesterday"
+     - Description "Out of 20 total rooms"
+  2. Today's Check-ins Card with:
+     - ArrowDownToLine icon
+     - Value "5" (text-2xl font-bold)
+     - Label "Today's Check-ins"
+     - Description "3 are arriving in the morning"
+  3. Today's Check-outs Card with:
+     - ArrowUpFromLine icon
+     - Value "3" (text-2xl font-bold)
+     - Label "Today's Check-outs"
+     - Description "All scheduled before noon"
+  4. Occupancy Rate Card with:
+     - Percent icon
+     - Value "78%" (text-2xl font-bold)
+     - Label "Occupancy Rate"
+     - Trend indicator "+5% from last week"
+
+- Charts Section in grid layout (grid-cols-1 lg:grid-cols-3 gap-4)
+  - Occupancy Chart (lg:col-span-2):
+    - Line chart showing occupancy percentage over last 14 days
+    - X-axis: dates
+    - Y-axis: percentage values from 0-100%
+    - Smooth line rendering with area fill beneath
+    - Card container with header saying "Occupancy Trend"
+  
+  - Today's Activity Timeline (lg:col-span-1):
+    - Vertical timeline of today's events
+    - Check-ins, check-outs, maintenance events
+    - Each item has time, event type (with icon), and details
+    - Colored dots indicating event type
+    - Card header saying "Today's Activity"
+
+- Bookings & Activity Section (grid-cols-1 lg:grid-cols-3 gap-4)
+  - Today's Check-ins & Check-outs (grid-cols-1 md:grid-cols-2 gap-4, lg:col-span-2):
+    - Two cards side by side
+    - Lists of guests with name, room, and time
+    - Avatars or initial icons for each guest
+    - Small badges indicating status
+  
+  - Recent Bookings (lg:col-span-2):
+    - Table with recent bookings
+    - Columns: Guest Name, Dates, Room, Status, Amount
+    - Status shown as colored badges
+    - "View all" link to bookings page
+    - Limited to 5 most recent bookings
+  
+  - Action Items Card (lg:col-span-1):
+    - List of tasks needing attention
+    - Maintenance alerts with room links
+    - Pending reviews count with icon
+    - Low inventory warnings
+    - Quick action buttons at bottom
+    - Card has subtle highlight or border
+
+- Each component on dashboard should have subtle entrance animations
+- All cards should have consistent styling with rounded corners (rounded-xl)
+- Statistics should have directional indicators (up/down arrows) where applicable
+- Use consistent spacing between sections (gap-6 or my-6)
+
+### Bookings
+- Page Header with:
+  - H1 title "Bookings" (text-3xl font-bold)
+  - Subtitle "Manage all your bookings in one place"
+  - Add New Booking button (primary blue, positioned top right)
+
+- Filter Card (p-6 mb-8, bg-white, rounded-xl, shadow-sm):
+  - Search input with Search icon
+  - Date range picker with calendar popup
+  - Status dropdown (All, Confirmed, Checked In, Checked Out, Cancelled)
+  - Property dropdown filter
+  - Active filters indicator showing currently applied filters
+  - Clear filters button (text-sm, text-primary)
+
+- View Toggle:
+  - Toggle between List view and Grid view
+  - Simple segmented control with icons
+
+- Bookings List View:
+  - Full width table with columns:
+    - Guest (name with reference number below)
+    - Room (number and property)
+    - Check In (formatted date)
+    - Check Out (formatted date)
+    - Status (color-coded badge)
+    - Total Amount (currency format)
+    - Amount Paid (currency format)
+    - Remaining (currency format, red if > 0)
+    - Created By (user who created booking)
+    - Actions (view, dropdown menu)
+  - Rows should have hover effect (hover:bg-muted/50)
+  - Dropdown menu with options:
+    - View Details
+    - Edit
+    - Update Payment
+    - Download PDF
+    - Status change options
+    - Delete (in red)
+
+- Bookings Grid View:
+  - Cards in grid layout (grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6)
+  - Each card includes:
+    - Guest avatar/icon and name at top
+    - Status badge at top right
+    - Room information with icon
+    - Date information with calendar icon
+    - Total amount with currency icon
+    - Payment status indicator
+    - View and action buttons at bottom
+
+- Pagination controls at bottom
+- Empty state display for when no bookings match filters
+- Loading state with animated spinner when fetching data
+
+### Booking View
+- Page Header with:
+  - H1 title "Booking #[ID]" (text-3xl font-bold)
+  - Status badge next to title
+  - Edit button (top right, outline style)
+
+- Main Content in grid layout (grid-cols-1 lg:grid-cols-3 gap-6):
+  
+  - Booking Details Card (lg:col-span-2):
+    - Sections for:
+      - Guest information (name, contact details)
+      - Reservation details (dates, room, rate)
+      - Payment information
+      - Special requests
+      - Notes section
+    - Each field has label (font-medium) and value (text-muted-foreground)
+    - All information organized in grid layout for readability
+  
+  - Side Panel (lg:col-span-1):
+    - Room preview card with image
+    - Check-in/out actions
+    - Timeline of booking events
+    - Related bookings by same guest
+
+- Action Buttons at bottom:
+  - Check-in guest button (if status is confirmed)
+  - Cancel booking button (if not checked-in)
+  - Print/download button
+  - Send confirmation email button
+
+- All cards have consistent styling (white bg, rounded-xl, shadow-sm)
+- Proper spacing between sections (py-4 or my-4)
+- Fade-in animation when the page loads
+
+### Booking Add/Edit
+- Page Header with:
+  - H1 title "Add New Booking" or "Edit Booking #[ID]" (text-3xl font-bold)
+  - Subtitle explaining the action
+
+- Form Layout in grid (grid-cols-1 lg:grid-cols-3 gap-6):
+  
+  - Main Form (lg:col-span-2):
+    - Card with sections:
+      - Guest Information card:
+        - Booking Reference (readonly in edit mode)
+        - Booking Status dropdown
+        - First Name and Last Name inputs (side by side)
+        - Email and Phone inputs (side by side)
+        - Guest ID/Passport upload
+      
+      - Booking Details card:
+        - Room dropdown with property grouping
+        - Date Range picker with calendar popup
+        - Adults and Children number inputs
+      
+      - Notes card:
+        - Textarea for special requests or notes
+  
+  - Sidebar (lg:col-span-1):
+    - Price Calculation card:
+      - Base room rate
+      - Number of nights
+      - Additional fees
+      - Taxes breakdown (VAT, Tourism Fee)
+      - Commission amount
+      - Security deposit
+      - Total amount in larger text
+      - Amount paid input
+      - Remaining balance calculated automatically
+    
+    - Send confirmation checkbox
+
+- Form Controls at bottom:
+  - Cancel button (outline style)
+  - Save button (primary blue)
+
+- Real-time calculation as user changes values
+- Form validation with error messages
+- Date picker should prevent invalid date selections
+- Loading state during form submission
+- Success/error notifications after submission
+
+### Availability
+- Calendar view showing room availability for selected date range
+- Date selector at top with month navigation
+- Grid view showing all rooms and their status for each day
+- Color coding:
+  - Available (green)
+  - Booked (red)
+  - Partially Available (amber)
+  - Maintenance (gray)
+- Ability to filter by property, room type
+- Quick action buttons to create booking for available slots
+- Legend explaining color codes
+- Weekly and monthly view options
+- Room names listed on y-axis, dates on x-axis
+
+### Rooms
+- Page Header with:
+  - H1 title "Rooms" (text-3xl font-bold)
+  - Subtitle "Manage all rooms across properties"
+  - Add New Room button (primary blue, top right)
+
+- Filter Card:
+  - Search input for room number/name
+  - Property filter dropdown
+  - Room type filter dropdown
+  - Status filter (All, Available, Occupied, Maintenance)
+  - View toggle (List/Grid)
+
+- Rooms List View:
+  - Table with columns:
+    - Room Number
+    - Room Type
+    - Property
+    - Capacity
+    - Features (icons)
+    - Base Rate
+    - Status
+    - Actions
+  - Status shown as colored badges
+  - Action dropdown with options
+
+- Rooms Grid View:
+  - Cards with:
+    - Room image at top
+    - Room number and type
+    - Property name
+    - Capacity icons
+    - Feature icons (WiFi, AC, etc)
+    - Rate displayed prominently
+    - Status badge
+    - View/Edit buttons
+
+- Pagination controls at bottom
+- Empty state for no matching rooms
+- Loading state when fetching data
+
+### Room View
+- Page Header with:
+  - H1 with Room Number and Type
+  - Property name as subtitle
+  - Status badge
+  - Edit button (top right)
+
+- Main Content in grid (grid-cols-1 lg:grid-cols-3 gap-6):
+  
+  - Room Details (lg:col-span-2):
+    - Room images in carousel/gallery
+    - Room specifications:
+      - Size/dimensions
+      - Maximum occupancy
+      - Bed configuration
+      - Features and amenities as icons with labels
+    - Detailed description
+    - Maintenance history in expandable section
+  
+  - Side Panel (lg:col-span-1):
+    - Pricing information card
+    - Current/upcoming booking info if occupied
+    - Calendar showing availability for next 7 days
+    - Quick action buttons:
+      - Create booking
+      - Mark for maintenance
+      - Update status
+
+- Statistics section showing:
+  - Occupancy rate
+  - Average length of stay
+  - Revenue generated
+  - Rating average if applicable
+
+### Room Add/Edit
+- Page Header with appropriate title
+- Form Layout in grid (grid-cols-1 lg:grid-cols-3 gap-6):
+
+  - Main Form (lg:col-span-2):
+    - Room Details card:
+      - Room Number input
+      - Room Name input
+      - Property dropdown
+      - Room Type dropdown
+      - Max Adults and Children inputs
+      - Size input with unit selector
+      - Floor/Level input
+      - Description textarea
+    
+    - Amenities card:
+      - Checkboxes for common amenities
+      - Grouped by category (Bathroom, Entertainment, etc.)
+    
+    - Images card:
+      - Image upload area with preview
+      - Multiple image support
+      - Drag and drop functionality
+  
+  - Sidebar (lg:col-span-1):
+    - Pricing card:
+      - Base Rate input
+      - Weekend Rate input
+      - Seasonal Rates section with date ranges
+      - Currency selector
+      - Tax inclusion toggle
+    
+    - Status card:
+      - Room status selection
+      - Availability toggle
+      - Maintenance schedule
+
+- Form Controls at bottom:
+  - Cancel button
+  - Save button (primary blue)
+
+### Cleaning Status
+- Page Header with title and subtitle
+
+- Status Summary Cards (flex flex-wrap gap-4 mb-8):
+  - Clean rooms count with green indicator
+  - In Progress rooms count with yellow indicator
+  - Needs Cleaning rooms count with red indicator
+
+- Filter Card (p-6 mb-8):
+  - Search input for room number
+  - Property filter dropdown
+  - Status filter dropdown
+  - Active filters indicator
+
+- Rooms Table:
+  - Columns:
+    - Room (number and type)
+    - Property
+    - Status (colored badge)
+    - Last Cleaned (date and time)
+    - Next Check-in (if applicable)
+    - Actions (contextual buttons)
+  - Status indicator with icon and badge
+  - Action buttons:
+    - Mark Clean (green)
+    - Start Cleaning (yellow)
+    - Mark Dirty (red)
+  - Conditional rendering of buttons based on current status
+
+- Calendar View toggle option:
+  - Calendar showing cleaning schedule by day
+  - Rooms as rows, days as columns
+  - Status indicators as colored cells
+
+- Assign staff feature for rooms being cleaned
+- Notes field for special cleaning instructions
+- Priority indicators for rooms needing immediate attention
+
+### Expenses
+- Page Header with:
+  - H1 title "Expenses" (text-3xl font-bold)
+  - Subtitle "Manage all property expenses"
+  - Add New Expense button (primary blue, top right)
+
+- Filter Card:
+  - Search input for expense description
+  - Category filter dropdown
+  - Date range filter with presets
+  - Property filter
+  - Results count and clear filters button
+
+- Expenses Table:
+  - Columns:
+    - Description
+    - Amount (currency formatted)
+    - Date
+    - Category (badge)
+    - Property
+    - Payment Method
+    - Approved Status
+    - Actions
+  - Category shown as colored badges
+  - Sortable columns with indicators
+  - Action dropdown with view, edit, delete options
+
+- Summary section showing:
+  - Total expenses for selected period
+  - Breakdown by category in small pie chart
+  - Comparison with previous period (up/down indicator)
+
+- Pagination controls
+- Export to CSV/PDF button
+- Loading and empty states
+
+### Expense Add
+- Page Header with appropriate title
+- Form Layout in grid (grid-cols-1 lg:grid-cols-3 gap-6):
+
+  - Main Form (lg:col-span-2):
+    - Expense Details card:
+      - Description input
+      - Amount input with currency prefix
+      - Date picker
+      - Category dropdown
+      - Property dropdown
+      - Vendor/supplier input
+      - Payment method dropdown
+      - Notes textarea
+  
+  - Sidebar (lg:col-span-1):
+    - Receipt Upload card:
+      - Drag and drop zone
+      - Upload button
+      - File type restrictions
+    - Expense Tips box:
+      - List of helpful tips for expense management
+
+- Recurring expense option
+  - Toggle for recurring expense
+  - Frequency selection (Monthly, Weekly, etc.)
+  - End date or number of occurrences
+
+- Form Controls at bottom:
+  - Cancel button
+  - Save button
+
+### Expense View
+- Page Header with:
+  - "Expense Details" title
+  - Expense amount and date prominently displayed
+  - Edit button (top right)
+
+- Main Content in grid layout:
+  
+  - Details Card:
+    - All expense information in two-column layout
+    - Each field has label and value
+    - Category shown with colored badge
+    - Payment status indicator
+  
+  - Receipt Card:
+    - Receipt image/PDF preview
+    - Download button
+    - Full-screen view option
+  
+  - Related Expenses section:
+    - Table of similar expenses
+    - Same category or vendor
+    - Recent time period
+
+- Action buttons at bottom
+- Approval workflow section if applicable
+
+### Users
+- Page Header with title and Add User button
+
+- Filter Card:
+  - Search input for username/email
+  - Role filter dropdown
+  - Status filter
+  - Last active filter
+  - Clear filters button
+
+- Users Table:
+  - Columns:
+    - User (avatar, name, email)
+    - Role (badge)
+    - Status (active/inactive badge)
+    - Last Active (date)
+    - Created Date
+    - Actions
+  - Status indicators with appropriate colors
+  - Role badges with role-specific colors
+  - Action dropdown with options
+
+- User Statistics section:
+  - Total active users
+  - Users by role breakdown
+  - Recent logins chart
+
+- Pagination controls
+- Permission indicator showing current user's abilities
+
+### User Add/Edit
+- Page Header with title
+
+- Form in grid layout:
+
+  - User Details card:
+    - First Name input
+    - Last Name input
+    - Email input with validation
+    - Phone input
+    - Role dropdown (Admin, Manager, Staff, etc.)
+    - Status toggle (Active/Inactive)
+    - Username input (if separate from email)
+  
+  - Password section (for new users):
+    - Password input with strength meter
+    - Confirm password input
+    - Auto-generate password option
+  
+  - Permissions card:
+    - Permission groups with checkboxes
+    - Organized by feature area
+    - Select all/none options
+    - Inherited permissions indicator
+  
+  - Profile image upload
+
+- Save and Cancel buttons
+- Option to send welcome email to new users
+
+### User View
+- Page Header with:
+  - User's name as title
+  - User's role as subtitle
+  - Status badge
+  - Edit button
+
+- Main Content in grid layout:
+  
+  - User Profile card:
+    - Large avatar/profile image
+    - Contact information
+    - Account details
+    - Last login information
+    - Account creation date
+  
+  - Activity card:
+    - Recent actions taken by user
+    - Login history
+    - Table with timestamps and activities
+  
+  - Permissions card:
+    - List of assigned permissions
+    - Grouped by category
+  
+  - Reset Password button (for admins)
+  - Impersonate User button (for debugging, admin only)
+
+- Status toggle to quickly enable/disable account
+
+### Owners
+- Page Header with title and Add Owner button
+
+- Filter Card similar to Users page
+
+- Owners Table:
+  - Columns:
+    - Owner (avatar, name)
+    - Properties Owned
+    - Contact Information
+    - Registration Date
+    - Last Login
+    - Status
+    - Actions
+  - Number of properties shown as badge
+  - Contact information with clickable email/phone
+  - Action dropdown with options
+
+- Owners Grid View option:
+  - Cards with owner details
+  - Property thumbnails
+  - Quick action buttons
+
+- Pagination and filtering controls
+
+### Owner Add/Edit
+- Form similar to User Add/Edit but with:
+  
+  - Owner Details card:
+    - Standard contact information
+    - Company name (if applicable)
+    - Tax ID/Business number
+    - Preferred payment method
+  
+  - Properties card:
+    - Multi-select for properties owned
+    - Add new property button
+    - Property share percentage if co-owned
+  
+  - Banking Details section:
+    - Bank name
+    - Account number
+    - Routing/SWIFT codes
+    - Payment currency preference
+  
+  - Commission Structure:
+    - Base rate or percentage
+    - Special terms
+
+- Document upload section for contracts
+- Save and Cancel buttons
+
+### Owner View
+- Page Header with owner's name and status
+
+- Main Content in grid layout:
+  
+  - Owner Profile card:
+    - Contact information
+    - Registration details
+    - Payment preferences
+  
+  - Properties card:
+    - List of owned properties with thumbnails
+    - Occupancy rates for each
+    - Revenue statistics
+  
+  - Financial Summary card:
+    - Current balance
+    - Pending payouts
+    - Payment history
+    - Year-to-date earnings
+  
+  - Recent Bookings for their properties
+  - Communication History section
+
+- Action buttons for common tasks
+
+### Reports
+- Page Header with title
+
+- Report Categories in card grid:
+  - Financial Reports card
+  - Occupancy Reports card
+  - Guest Statistics card
+  - Performance Metrics card
+  - Custom Reports card
+
+- Each card has:
+  - Icon representing report type
+  - Title and description
+  - Quick action buttons to generate common reports
+  - Last generated report with timestamp
+
+- Report Builder section:
+  - Select report type
+  - Configure parameters:
+    - Date range
+    - Properties to include
+    - Metrics to include
+    - Grouping options
+    - Chart types
+  - Preview panel
+  - Save report configuration option
+
+- Recently Generated Reports table
+- Scheduled Reports section
+- Export formats (PDF, Excel, CSV)
+
+### Audit Logs
+- Page Header with title
+- Action buttons for Export Logs and Security Report
+
+- Filter Card:
+  - Search input for logs
+  - Date range picker
+  - Log type filter (Authentication, Booking, User, System, Settings)
+  - User filter dropdown
+  - IP address search
+
+- Logs Table:
+  - Columns:
+    - Type (with icon and badge)
+    - Timestamp (monospace font)
+    - User
+    - Action
+    - IP Address (monospace)
+    - Details
+  - Type column with icon and color-coded badge
+  - Monospace font for technical data
+  - Expandable rows for more details
+  - System user specially marked
+
+- Pagination with results count
+- Log retention policy notice
+- Security alerts section for suspicious activities
+
+### Settings
+- Tab navigation for different setting categories:
+  - General Settings
+  - Property Settings
+  - Room Types
+  - Email Templates
+  - SMS Templates
+  - Payment Settings
+  - System Configuration
+  - Integration Settings
+
+- Each section has appropriate forms with:
+  - Clear section headers
+  - Form inputs grouped logically
+  - Save buttons for each section
+  - Reset to default options
+
+- General Settings:
+  - Company information
+  - Contact details
+  - Default language and currency
+  - Date and time formats
+  - Logo upload
+
+- Property Settings:
+  - List of properties with edit/delete options
+  - Add property button
+  - Property details form with:
+    - Name, address, contact info
+    - Facilities and amenities
+    - Photos and description
+    - Tax and fee configuration
+
+- Room Types:
+  - List of room types with details
+  - Add/Edit forms with:
+    - Name and description
+    - Default capacity
+    - Default rate
+    - Amenities included
+    - Images
+
+- Email Templates:
+  - List of template types
+  - Template editor with:
+    - Subject line
+    - Rich text editor for body
+    - Variable insertion tool
+    - Preview button
+    - Test send option
+  - Variables legend showing available merge fields
+
+- SMS Templates:
+  - Similar to email templates but with character count
+  - Preview on mobile device mockup
+
+- Payment Settings:
+  - Payment gateway configuration
+  - Currency settings
+  - Tax configuration
+  - Invoice numbering format
+  - Payment terms
+
+## Owner Portal Pages
+
+### Owner Dashboard
+- Similar to staff dashboard but simplified
+- Focus on property performance metrics
+- Financial summaries prominent at top
+- Bookings calendar showing upcoming reservations
+- Quick action buttons for common tasks
+
+### Owner Bookings
+- Similar to staff bookings but limited to owner's properties
+- Read-only view with fewer action options
+- Filter by property if owner has multiple properties
+- Calendar view option to see bookings visually
+
+### Owner Availability
+- Calendar showing room availability
+- Ability to block dates for owner use
+- View-only for most booking details
+- Simplified interface compared to staff version
+
+### Owner Cleaning Status
+- Status overview of owner's properties
+- Calendar view showing cleaning schedule
+- Limited actions compared to staff version
+- Ability to add cleaning notes for staff
+
+### Owner Reports
+- Simplified reports focused on financial performance
+- Occupancy statistics
+- Revenue breakdown
+- Year-over-year comparisons
+- Download options for tax purposes
+
+## Shared Components
+
+### Header
+- Fixed position at top of screen
+- Height: 4rem (h-16)
+- White background with subtle shadow
+- Border bottom: 1px solid Light Gray
+- Contains:
+  - Left: App logo and hamburger menu for mobile
+  - Middle: Search bar (expandable on mobile)
+  - Right: Notification bell, user profile dropdown
+- Notification bell shows count of unread notifications
+- Profile dropdown with:
+  - User name and avatar
+  - Role label
+  - Profile link
+  - Settings link
+  - Logout option
+- Responsive design that collapses to menu on mobile
+
+### Sidebar
+- Fixed position on left side
+- Width: 16rem (w-64) on desktop
+- White background with border-right
+- Contains:
+  - Logo section at top (h-16)
+  - Main navigation menu
+  - Secondary navigation items at bottom
+- Navigation items have:
+  - Icon on left
+  - Text label
+  - Active state with blue background
+  - Hover effect
+- Collapsible to icons-only on smaller screens
+- Full-screen overlay on mobile when expanded
+- Smooth transition animations for collapsing/expanding
+
+### Navigation Menu
+- Grouped menu items with section headers
+- Dashboard as first item
+- Booking management section:
+  - Bookings
+  - Availability
+  - Calendar
+- Property management section:
+  - Rooms
+  - Cleaning Status
+- Financial section:
+  - Expenses
+  - Reports
+- Administration section:
+  - Users
+  - Owners
+  - Audit Logs
+  - Settings
+- Each item has appropriate icon from Lucide icons library
+- Active state indicator for current page
+- Optional badge for counters (e.g., number of pending bookings)
+
+### Cards
+- White background (#FFFFFF)
+- Light shadow: shadow-sm
+- Border radius: 0.75rem (rounded-xl)
+- Border: 1px solid Light Gray (#E5E7EB)
+- Padding: 1.5rem (p-6)
+- Card sections:
+  - Card Header: pb-4
+  - Card Title: text-lg font-semibold
+  - Card Description: text-sm text-gray-500
+  - Card Content: py-2
+  - Card Footer: pt-4 flex justify-end gap-2
+- Hover effect: subtle shadow increase
+- Transition: transition-all duration-200
+
+### Buttons
+- Primary:
+  - Blue background (#3B82F6)
+  - White text
+  - Rounded corners (0.5rem)
+  - Padding: 0.5rem 1rem (py-2 px-4)
+  - Hover: Darker blue (#2563EB)
+- Secondary:
+  - White background
+  - Gray border
+  - Gray text
+  - Same rounding and padding as primary
+- Outline:
+  - Transparent background
+  - Border matching text color
+  - Same rounding as primary
+- Ghost:
+  - Transparent background
+  - No border
+  - Text color
+  - Hover adds light background
+- Destructive:
+  - Red background
+  - White text
+  - Same rounding as primary
+- Button Sizes:
+  - Small: py-1 px-3
+  - Default: py-2 px-4
+  - Large: py-2.5 px-5
+- All buttons have focus states with ring
+
+### Form Elements
+- Inputs:
+  - Height: 2.5rem (h-10)
+  - Border radius: 0.375rem (rounded-md)
+  - Border: 1px solid Light Gray
+  - Padding: px-3
+  - Focus: Ring and border color using primary blue
+- Select Dropdowns:
+  - Same styling as inputs
+  - Dropdown panel: White background, same border radius, shadow-md
+- Checkboxes & Radio Buttons:
+  - Size: 1rem × 1rem
+  - Border radius for checkbox: 0.25rem (rounded)
+  - Border radius for radio: 50% (rounded-full)
+  - Checked state: Primary blue background, white check icon
+- Toggle/Switch:
+  - Height: 1.5rem
+  - Width: 2.75rem
+  - Border radius: 999px (rounded-full)
+  - Background when off: Light Gray
+  - Background when on: Primary Blue
+
+### Tables
+- Full width (w-full)
+- Border-collapse
+- Text alignment: left
+- Table Header:
+  - Font weight: Medium (font-medium)
+  - Background: Very light gray (#F9FAFB)
+  - Border bottom: 1px solid Light Gray
+  - Padding: 0.75rem 1rem (py-3 px-4)
+- Table Row:
+  - Border bottom: 1px solid Light Gray
+  - Hover state: Very light gray background
+- Table Cell:
+  - Padding: 0.75rem 1rem (py-3 px-4)
+- Responsive behavior:
+  - Horizontal scroll on small screens
+  - Optional collapse to cards on very small screens
+
+### Badges
+- Small text: text-xs
+- Font weight: Medium (font-medium)
+- Padding: px-2.5 py-0.5
+- Border radius: 9999px (rounded-full)
+- Colors based on status:
+  - Confirmed/Success: Green background, green text
+  - Pending/Warning: Amber background, amber text
+  - Cancelled/Error: Red background, red text
+  - Info: Blue background, blue text
+  - Default: Gray background, gray text
+
+### Modals/Dialogs
+- Background overlay: Black with 25% opacity
+- Modal:
+  - White background
+  - Border radius: 0.5rem (rounded-lg)
+  - Shadow: shadow-lg
+  - Max width: 32rem (max-w-2xl)
+  - Padding: 1.5rem (p-6)
+- Modal Header:
+  - Title: text-lg font-semibold
+  - Close button in top right
+- Modal Footer:
+  - Flex with justify-end
+  - Gap between buttons: 0.5rem (gap-2)
+- Animation: Fade and scale in
+
+### Alerts
+- Border radius: 0.375rem (rounded-md)
+- Padding: 1rem (p-4)
+- Border left: 4px solid (color varies by type)
+- Colors based on type (same as badges)
+- Dismissable via X button
+- Optional icon on left
+- Animation: Fade in
+
+### Tooltips
+- Small text: text-xs
+- Background: Dark gray (#374151)
+- Text color: White
+- Border radius: 0.25rem (rounded)
+- Padding: 0.5rem 0.75rem (py-2 px-3)
+- Max width: 15rem (max-w-xs)
+- Arrow pointing to trigger element
+
+### Pagination
+- Flex container with items-center justify-between
+- Page numbers as buttons
+- Previous/Next buttons with icons
+- Current page highlighted
+- Ellipsis for skipped pages
+- Items per page selector
+- Results count text
+
+### Calendar Components
+- Month view with grid of days
+- Week and day view options
+- Events displayed as colored blocks
+- Day cells have:
+  - Date number
+  - Indicator dots for events
+  - Hover effect for interactive days
+- Navigation buttons to change month/year
+- Today button to jump to current date
+- Range selection capability for booking date ranges
+
+## Responsive Design Specifications
+
+### Mobile (<640px)
+- Single column layouts throughout
+- Sidebar hidden by default, toggleable with hamburger menu
+- Tables convert to card layouts
+- Form fields at full width
+- Action buttons stacked vertically
+- Header simplified with menu button
+- Reduced padding: p-4 instead of p-6
+- Stacked stat cards
+
+### Tablet (640px - 1023px)
+- Two-column layouts where appropriate
+- Sidebar toggleable but initially visible
+- Tables remain as tables with horizontal scrolling if needed
+- Form layouts more spacious
+- Side-by-side form fields where appropriate
+- 2x2 grid for stat cards
+
+### Desktop (≥1024px)
+- Multi-column layouts (2-4 columns)
+- Sidebar permanently visible
+- Tables full-width with all columns visible
+- Side-by-side forms and panels
+- Full dashboard layout with 3-4 columns for stats
+
+## Animation Specifications
+
+### Page Transitions
+- Page Entry: Fade in with slight upward movement (0.4s)
+- Page Exit: Fade out (0.3s)
+
+### Component Animations
+- Card Entry: Slide up with staggered delay (0.5s)
+- Stat Cards: Sequential slide up animations with 100ms delay between each
+- Alert/Toast: Slide in from right, auto-hide after 5 seconds
+- Modal: Fade in with scale (0.2s)
+- Sidebar Toggle: Slide in/out (0.3s)
+- Loading Spinner: Continuous rotation animation
+- Hover Effects: Subtle scale (1.02) and shadow increase on cards/buttons
+
+### Animation Classes
+- animate-fade-in: Opacity 0 to 1 over 0.6s
+- animate-slide-up: Translate Y 20px to 0 with opacity change over 0.5s
+- animate-slide-in: Translate X 20px to 0 with opacity change over 0.5s
+- [animation-delay:100ms]: Delay animation by 100ms (adjustable)
+
+## Form Validation
+
+- Real-time validation as user types
+- Error messages appear below invalid fields
+- Red border and icon for invalid fields
+- Green border and icon for valid fields
+- Submit button disabled until form is valid
+- Form-wide error message at top if submission fails
+- Success message/redirect on successful submission
+
+## Loading States
+
+- Skeleton screens for initial page loads
+- Spinner animation for data fetching operations
+- Ghost cards with pulsing animation
+- Button loading states (spinner replacing text)
+- Progress indicators for long operations
+- Fade in content when loaded
+
+## Empty States
+
+- Friendly illustrations for empty data sections
+- Clear messages explaining why data is empty
+- Action buttons to add first item
+- Helpful guidance text for getting started
+- Consistent styling across all empty states
+
+## Error States
+
+- Clear error messages with suggested actions
+- Option to retry failed operations
+- Fallback UI for components that fail to load
+- Console logging for debugging
+- Error boundary components to prevent entire UI crashes
+
+## Specific Implementation Details
+
+### Authentication Flow
+- Login form with email/password
+- Remember me checkbox
+- Forgot password flow
+- Token-based session management
+- Role-based access control
+- Session timeout handling
+- Multiple authentication factors (optional)
+
+### Booking Management Flow
+- Creation process:
+  1. Select dates and room
+  2. Enter guest details
+  3. Add special requests
+  4. Review and confirm
+- Edit capabilities for all fields
+- Status change workflow
+- Cancellation process with confirmation
+- Payment recording system
+- Email confirmation templates
+
+### Room Management
+- Room status workflow:
+  - Available → Booked → Occupied → Cleaning → Available
+- Maintenance scheduling
+- Rate management by season
+- Inventory tracking for amenities
+- Photo management with gallery view
+- Floor plan integration (optional)
+
+### Financial Management
+- Expense categorization
+- Receipt attachment and processing
+- Approval workflows
+- Tax calculation
+- Financial reporting
+- Export capabilities for accounting
+- Budget tracking against actuals
+
+## Data Visualization
+
+### Charts and Graphs
+- Line charts for time-series data
+- Bar charts for comparisons
+- Pie/Donut charts for distributions
+- Stacked charts for segmented data
+- Heat maps for calendar views
+- Interactive tooltips on hover
+- Responsive sizing based on container
+- Consistent color scheme with application
+
+### Dashboard Metrics
+- KPI cards with comparison to previous period
+- Trend indicators (up/down arrows with percentage)
+- Sparklines for quick trend visualization
+- Progress bars for goals/targets
+- Color coding based on performance
+- Drilldown capabilities for detailed view
+
+## Interactions and State Management
+
+### User Interactions
+- Hover effects for interactive elements
+- Active states for selected items
+- Focus states for keyboard navigation
+- Loading indicators for asynchronous actions
+- Confirmation dialogs for destructive actions
+- Toast notifications for success/error feedback
+- Tooltip help for complex features
+
+### State Management
+- Form state handling
+- Filter and sort persistence
+- Pagination state
+- View preferences (list/grid)
+- Local storage for user preferences
+- URL parameters for shareable states
+- Global state for authentication and theme
+
+## Critical Front-end Implementation Details
+
+### Filtering and Sorting
+- Implement client-side filtering for immediate feedback
+- Server-side filtering for large datasets
+- Multiple filter criteria support
+- Filter combination logic (AND/OR)
+- Sort by any column
+- Multiple sort levels
+- Filter and sort persistence across page reloads
+- Clear all filters button
+- Active filters display with remove option
+
+### Search Functionality
+- Global search across multiple data types
+- Type-ahead suggestions
+- Search history
+- Advanced search options
+- Highlight matching text in results
+- No results state with suggestions
+- Recent searches list
+
+### Date Handling
+- Consistent date formatting across the application
+- Date range selection with calendar
+- Relative date options (Today, Yesterday, This Week, etc.)
+- Time zone handling for international properties
+- Date math for night calculations
+- Date validation for check-in/check-out logic
+- Blocked dates visualization in calendars
+
+### Mobile Optimizations
+- Touch-friendly controls (larger tap targets)
+- Swipe gestures for common actions
+- Collapsible sections to save space
+- Bottom navigation for critical actions
+- Responsive images with appropriate sizing
+- Content prioritization for small screens
+- Reduced animation for performance
+
+## Technical Implementation Notes
+
+### Next.js Configuration
+- Use App Router for routing
+- Implement server components where appropriate
+- Set up proper route groups
+- Configure loading and error states for each route
+- Implement middleware for authentication and routing
+- Configure API routes for data operations
+- Set up proper metadata for SEO
+
+### Data Fetching Strategy
+- Server components for initial data
+- Client-side fetching for interactive updates
+- Implement proper caching strategy
+- Use SWR or React Query for data management
+- Optimize with pagination and infinite loading
+- Implement proper error handling
+- Use suspense boundaries for loading states
+
+### Component Architecture
+- Atomic design principles
+- Reusable component library
+- Proper prop typing with TypeScript
+- Component composition over inheritance
+- Clear separation of concerns
+- Performance optimizations with memoization
+- Accessibility considerations in all components
+
+### Styling Approach
+- Tailwind CSS for utility-first styling
+- Consistent use of spacing scale
+- Design tokens for colors, typography, etc.
+- Responsive design using Tailwind breakpoints
+- Dark mode support (if required)
+- Print stylesheets for reports and invoices
+- CSS variables for theme customization
+
+## Additional Features to Implement
+
+### Notifications
+- System notifications for important events
+- Email notifications for critical actions
+- In-app notification center
+- Notification preferences by type
+- Read/unread status tracking
+- Batch actions for notifications
+- Push notifications for mobile (optional)
+
+### Export Functionality
+- PDF generation for invoices and reports
+- Excel/CSV export for data tables
+- Configurable export options
+- Scheduled report exports
+- Branded templates for customer-facing documents
+- Print-optimized views
+
+### Multi-language Support
+- Language selection in user preferences
+- Translation files for supported languages
+- Right-to-left (RTL) support for appropriate languages
+- Date and number formatting by locale
+- Translation tools for dynamic content
+- Language detection based on browser settings
+
+### Accessibility Features
+- ARIA attributes throughout the application
+- Keyboard navigation support
+- Screen reader compatibility
+- Sufficient color contrast
+- Focus management
+- Skip navigation links
+- Accessible form validation
+- Testing with accessibility tools
+
+## Final Notes for V0.dev Implementation
+
+- Focus on visual fidelity to the design specs
+- Ensure responsive behavior across all screen sizes
+- Implement consistent spacing and alignment
+- Use the specified color palette consistently
+- Follow the typography guidelines precisely
+- Implement smooth animations as specified
+- Ensure all interactive elements have appropriate states
+- Pay attention to the small details like shadows and borders
+- Make sure form elements follow the design specifications
+- Use the specified icons from Lucide icon set
+- Implement proper loading and empty states
+- Create visually appealing data visualizations
+- Ensure the UI is clean, professional, and modern
+- Follow the card and layout specifications exactly
+- Make sure all pages are fully responsive according to the breakpoint specs
+
+This comprehensive specification contains all the details needed to recreate the Hotel Management System application with V0.dev, covering every aspect from layout and design to interactions and functionality.
