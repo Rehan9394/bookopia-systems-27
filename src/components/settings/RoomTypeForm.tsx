@@ -69,8 +69,8 @@ const RoomTypeForm = ({ typeId }: RoomTypeFormProps) => {
         base_rate: parseFloat(data.base_rate),
         max_occupancy: parseInt(data.max_occupancy),
         features: data.features || {},
-        // Fix: Convert active to boolean if it's a string
-        active: data.active === 'true' || data.active === true ? true : false
+        // Fix: Convert active to boolean explicitly
+        active: data.active === true || data.active === 'true'
       });
       
       toast({
