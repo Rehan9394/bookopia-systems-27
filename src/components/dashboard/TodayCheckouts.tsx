@@ -73,7 +73,7 @@ export function TodayCheckouts() {
               </div>
               <div className="text-right">
                 <Badge variant="outline" className="mb-1 text-xs bg-green-50 text-green-800 border-green-200">
-                  {format(new Date(checkout.check_out), 'HH:mm')}
+                  {format(new Date(checkout.check_out_date), 'HH:mm')}
                 </Badge>
                 <Link to={`/bookings/${checkout.id}`}>
                   <Button variant="ghost" size="sm" className="h-7 text-xs">Check-out</Button>

@@ -1,3 +1,4 @@
+
 export type Room = {
   id: string;
   number: string;
@@ -62,6 +63,7 @@ export type Booking = {
   amount_paid: number;
   pending_amount?: number;
   notes: string | null;
+  special_requests: string | null;
   created_at: string;
   updated_at: string;
   created_by?: string | null;
@@ -69,34 +71,50 @@ export type Booking = {
   rooms?: {
     number: string;
     property_id: string;
+    property?: string;
   };
   guests?: {
     first_name: string;
     last_name: string;
-    email: string;
-    phone: string;
+    email: string | null;
+    phone: string | null;
   };
   guest_name?: string; // Computed property for convenience
 };
 
 export type User = {
   id: string;
-  name: string;
   email: string;
-  role: string;
-  status: string;
+  password: string;
+  first_name: string;
+  last_name: string;
+  role: 'admin' | 'agent';
+  phone: string | null;
   avatar_url: string | null;
-  last_active: string | null;
+  status: boolean;
+  last_login: string | null;
   created_at: string;
   updated_at: string;
 };
 
 export type Owner = {
   id: string;
-  name: string;
   email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
   phone: string | null;
-  payment_info: any;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  zip_code: string | null;
+  country: string | null;
+  notes: string | null;
+  birth_date: string | null;
+  citizenship: string | null;
+  avatar_url: string | null;
+  joined_date: string | null;
+  status: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -106,31 +124,128 @@ export type Expense = {
   description: string;
   amount: number;
   date: string;
-  category: string;
-  payment_method: string;
-  status: string;
+  category: 'utilities' | 'maintenance' | 'supplies' | 'personnel' | 'marketing' | 'taxes' | 'insurance' | 'other';
+  property_id: string | null;
+  room_id: string | null;
+  owner_id: string | null;
+  vendor: string | null;
+  payment_method: string | null;
+  receipt_url: string | null;
+  notes: string | null;
   created_at: string;
   updated_at: string;
+  created_by: string | null;
+  updated_by: string | null;
 };
 
 export type CleaningTask = {
   id: string;
   room_id: string;
-  date: string;
-  assigned_to: string;
-  status: string;
+  scheduled_date: string;
+  scheduled_time: string | null;
+  status: 'pending' | 'in_progress' | 'completed' | 'verified';
+  assigned_to: string | null;
+  notes: string | null;
+  completed_at: string | null;
+  verified_at: string | null;
+  verified_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RoomOwnerAssignment = {
+  id: string;
+  room_id: string;
+  owner_id: string;
+  assigned_at: string;
+  assigned_by: string | null;
+  active: boolean;
+  notes: string | null;
+};
+
+export type Property = {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  zip_code: string;
+  country: string;
+  phone: string | null;
+  email: string | null;
+  timezone: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  description: string | null;
+  amenities: any | null;
+  active: boolean;
   notes: string | null;
   created_at: string;
   updated_at: string;
 };
 
-export type PropertyOwnership = {
+export type RoomType = {
   id: string;
-  room_id: string;
-  owner_id: string;
-  commission_rate: number;
-  contract_start_date: string;
-  contract_end_date: string | null;
+  name: string;
+  property_id: string;
+  description: string | null;
+  base_rate: number;
+  max_occupancy: number;
+  features: any | null;
+  image_urls: string[] | null;
+  active: boolean;
   created_at: string;
   updated_at: string;
+};
+
+export type EmailTemplate = {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+  variables: any | null;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SmsTemplate = {
+  id: string;
+  name: string;
+  content: string;
+  variables: any | null;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Settings = {
+  id: number;
+  company_name: string;
+  company_email: string;
+  date_format: string;
+  currency_format: string;
+  email_notifications: boolean;
+  auto_checkout: boolean;
+  default_check_in_time: string;
+  default_check_out_time: string;
+  default_tax_rate: number;
+  reminder_days: number;
+  booking_confirmation_template: string | null;
+  check_in_reminder_template: string | null;
+  check_out_reminder_template: string | null;
+  updated_at: string;
+};
+
+export type AuditLog = {
+  id: string;
+  user_id: string | null;
+  action: string;
+  table_name: string | null;
+  record_id: string | null;
+  old_values: any | null;
+  new_values: any | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: string;
 };

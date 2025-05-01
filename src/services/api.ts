@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Room, 
@@ -6,8 +7,14 @@ import {
   Owner, 
   Expense, 
   CleaningTask,
-  PropertyOwnership,
-  Guest
+  Guest,
+  Property,
+  RoomType,
+  RoomOwnerAssignment,
+  EmailTemplate,
+  SmsTemplate,
+  Settings,
+  AuditLog
 } from './supabase-types';
 
 // Helper function to enhance a booking with calculated fields and derived properties
@@ -32,7 +39,10 @@ function enhanceBooking(booking: any): Booking {
 export const fetchRooms = async (): Promise<Room[]> => {
   const { data, error } = await supabase
     .from('rooms')
-    .select('*, properties(name)');
+    .select(`
+      *,
+      properties!inner(name)
+    `);
   
   if (error) {
     console.error('Error fetching rooms:', error);
@@ -49,7 +59,10 @@ export const fetchRooms = async (): Promise<Room[]> => {
 export const fetchRoomById = async (id: string): Promise<Room> => {
   const { data, error } = await supabase
     .from('rooms')
-    .select('*, properties(name)')
+    .select(`
+      *,
+      properties!inner(name)
+    `)
     .eq('id', id)
     .single();
   
@@ -68,7 +81,10 @@ export const fetchRoomById = async (id: string): Promise<Room> => {
 export const fetchRoomByNumber = async (number: string): Promise<Room> => {
   const { data, error } = await supabase
     .from('rooms')
-    .select('*, properties(name)')
+    .select(`
+      *,
+      properties!inner(name)
+    `)
     .eq('number', number)
     .single();
   
@@ -89,8 +105,8 @@ export const fetchBookings = async (): Promise<Booking[]> => {
     .from('bookings')
     .select(`
       *,
-      rooms(number, properties(name)),
-      guests:guest_id(first_name, last_name, email, phone)
+      rooms!inner(number, property_id, properties!inner(name)),
+      guests!inner(first_name, last_name, email, phone)
     `);
   
   if (error) {
@@ -98,9 +114,16 @@ export const fetchBookings = async (): Promise<Booking[]> => {
     throw error;
   }
   
-  const transformedData = (data || []).map(booking => enhanceBooking(booking));
-  
-  return transformedData;
+  return (data || []).map(booking => {
+    const enhancedBooking = enhanceBooking(booking);
+    if (booking.rooms && booking.rooms.properties) {
+      enhancedBooking.rooms = {
+        ...booking.rooms,
+        property: booking.rooms.properties.name
+      };
+    }
+    return enhancedBooking;
+  });
 };
 
 export const fetchBookingById = async (id: string): Promise<Booking> => {
@@ -108,8 +131,8 @@ export const fetchBookingById = async (id: string): Promise<Booking> => {
     .from('bookings')
     .select(`
       *,
-      rooms(number, properties(name)),
-      guests:guest_id(first_name, last_name, email, phone)
+      rooms!inner(number, property_id, properties!inner(name)),
+      guests!inner(first_name, last_name, email, phone)
     `)
     .eq('id', id)
     .single();
@@ -119,7 +142,14 @@ export const fetchBookingById = async (id: string): Promise<Booking> => {
     throw error;
   }
   
-  return enhanceBooking(data);
+  const enhancedBooking = enhanceBooking(data);
+  if (data.rooms && data.rooms.properties) {
+    enhancedBooking.rooms = {
+      ...data.rooms,
+      property: data.rooms.properties.name
+    };
+  }
+  return enhancedBooking;
 };
 
 export const createBooking = async (bookingData: Partial<Booking>, guestData: Partial<Guest>): Promise<Booking> => {
@@ -150,7 +180,7 @@ export const createBooking = async (bookingData: Partial<Booking>, guestData: Pa
       const { data: newGuest, error: guestError } = await supabase
         .from('guests')
         .insert(guestData)
-        .select('id')
+        .select()
         .single();
       
       if (guestError) {
@@ -176,8 +206,8 @@ export const createBooking = async (bookingData: Partial<Booking>, guestData: Pa
     })
     .select(`
       *,
-      rooms(number, properties(name)),
-      guests:guest_id(first_name, last_name, email, phone)
+      rooms!inner(number, property_id, properties!inner(name)),
+      guests!inner(first_name, last_name, email, phone)
     `)
     .single();
   
@@ -186,7 +216,14 @@ export const createBooking = async (bookingData: Partial<Booking>, guestData: Pa
     throw error;
   }
   
-  return enhanceBooking(data);
+  const enhancedBooking = enhanceBooking(data);
+  if (data.rooms && data.rooms.properties) {
+    enhancedBooking.rooms = {
+      ...data.rooms,
+      property: data.rooms.properties.name
+    };
+  }
+  return enhancedBooking;
 };
 
 export const updateBooking = async (id: string, bookingData: Partial<Booking>, guestData?: Partial<Guest>): Promise<Booking> => {
@@ -208,8 +245,8 @@ export const updateBooking = async (id: string, bookingData: Partial<Booking>, g
     .eq('id', id)
     .select(`
       *,
-      rooms(number, properties(name)),
-      guests:guest_id(first_name, last_name, email, phone)
+      rooms!inner(number, property_id, properties!inner(name)),
+      guests!inner(first_name, last_name, email, phone)
     `)
     .single();
   
@@ -218,7 +255,14 @@ export const updateBooking = async (id: string, bookingData: Partial<Booking>, g
     throw error;
   }
   
-  return enhanceBooking(data);
+  const enhancedBooking = enhanceBooking(data);
+  if (data.rooms && data.rooms.properties) {
+    enhancedBooking.rooms = {
+      ...data.rooms,
+      property: data.rooms.properties.name
+    };
+  }
+  return enhancedBooking;
 };
 
 export const deleteBooking = async (id: string): Promise<void> => {
@@ -240,8 +284,8 @@ export const fetchTodayCheckins = async (): Promise<Booking[]> => {
     .from('bookings')
     .select(`
       *,
-      rooms(number, properties(name)),
-      guests:guest_id(first_name, last_name, email, phone)
+      rooms!inner(number, property_id, properties!inner(name)),
+      guests!inner(first_name, last_name, email, phone)
     `)
     .eq('check_in_date', today)
     .eq('status', 'confirmed');
@@ -251,9 +295,16 @@ export const fetchTodayCheckins = async (): Promise<Booking[]> => {
     throw error;
   }
   
-  const transformedData = (data || []).map(booking => enhanceBooking(booking));
-  
-  return transformedData;
+  return (data || []).map(booking => {
+    const enhancedBooking = enhanceBooking(booking);
+    if (booking.rooms && booking.rooms.properties) {
+      enhancedBooking.rooms = {
+        ...booking.rooms,
+        property: booking.rooms.properties.name
+      };
+    }
+    return enhancedBooking;
+  });
 };
 
 export const fetchTodayCheckouts = async (): Promise<Booking[]> => {
@@ -263,8 +314,8 @@ export const fetchTodayCheckouts = async (): Promise<Booking[]> => {
     .from('bookings')
     .select(`
       *,
-      rooms(number, properties(name)),
-      guests:guest_id(first_name, last_name, email, phone)
+      rooms!inner(number, property_id, properties!inner(name)),
+      guests!inner(first_name, last_name, email, phone)
     `)
     .eq('check_out_date', today)
     .eq('status', 'checked_in');
@@ -274,9 +325,16 @@ export const fetchTodayCheckouts = async (): Promise<Booking[]> => {
     throw error;
   }
   
-  const transformedData = (data || []).map(booking => enhanceBooking(booking));
-  
-  return transformedData;
+  return (data || []).map(booking => {
+    const enhancedBooking = enhanceBooking(booking);
+    if (booking.rooms && booking.rooms.properties) {
+      enhancedBooking.rooms = {
+        ...booking.rooms,
+        property: booking.rooms.properties.name
+      };
+    }
+    return enhancedBooking;
+  });
 };
 
 export const fetchUsers = async (): Promise<User[]> => {
@@ -308,7 +366,12 @@ export const fetchOwners = async (): Promise<Owner[]> => {
 export const fetchExpenses = async (): Promise<Expense[]> => {
   const { data, error } = await supabase
     .from('expenses')
-    .select('*')
+    .select(`
+      *,
+      properties!left(name),
+      rooms!left(number),
+      owners!left(first_name, last_name)
+    `)
     .order('date', { ascending: false });
   
   if (error) {
@@ -322,23 +385,14 @@ export const fetchExpenses = async (): Promise<Expense[]> => {
 export const fetchCleaningTasks = async (): Promise<CleaningTask[]> => {
   const { data, error } = await supabase
     .from('cleaning_tasks')
-    .select('*, rooms(number, property:type), users(name)');
+    .select(`
+      *,
+      rooms!inner(number, properties!inner(name)),
+      users!left(first_name, last_name)
+    `);
   
   if (error) {
     console.error('Error fetching cleaning tasks:', error);
-    throw error;
-  }
-  
-  return data || [];
-};
-
-export const fetchPropertyOwnership = async (): Promise<PropertyOwnership[]> => {
-  const { data, error } = await supabase
-    .from('property_ownership')
-    .select('*, rooms(number), owners(name)');
-  
-  if (error) {
-    console.error('Error fetching property ownership:', error);
     throw error;
   }
   
@@ -360,7 +414,7 @@ export const updateBookingStatus = async (id: string, status: string): Promise<v
 };
 
 export const updateRoomStatus = async (id: string, status: string): Promise<void> => {
-  const validStatus = status as "available" | "occupied" | "cleaning" | "maintenance" | "out-of-order";
+  const validStatus = status as "available" | "occupied" | "cleaning" | "maintenance";
   
   const { error } = await supabase
     .from('rooms')
@@ -374,7 +428,7 @@ export const updateRoomStatus = async (id: string, status: string): Promise<void
 };
 
 export const updateCleaningTaskStatus = async (id: string, status: string): Promise<void> => {
-  const validStatus = status as "pending" | "in-progress" | "completed" | "verified" | "issues";
+  const validStatus = status as "pending" | "in_progress" | "completed" | "verified";
   
   const { error } = await supabase
     .from('cleaning_tasks')
@@ -388,7 +442,7 @@ export const updateCleaningTaskStatus = async (id: string, status: string): Prom
 };
 
 // Property API Functions
-export const fetchProperties = async () => {
+export const fetchProperties = async (): Promise<Property[]> => {
   const { data, error } = await supabase
     .from('properties')
     .select('*');
@@ -401,7 +455,7 @@ export const fetchProperties = async () => {
   return data || [];
 };
 
-export const fetchPropertyById = async (id: string) => {
+export const fetchPropertyById = async (id: string): Promise<Property> => {
   const { data, error } = await supabase
     .from('properties')
     .select('*')
@@ -416,10 +470,10 @@ export const fetchPropertyById = async (id: string) => {
   return data;
 };
 
-export const createProperty = async (propertyData: any) => {
+export const createProperty = async (propertyData: Partial<Property>): Promise<Property> => {
   const { data, error } = await supabase
     .from('properties')
-    .insert([propertyData])
+    .insert(propertyData)
     .select()
     .single();
   
@@ -431,7 +485,7 @@ export const createProperty = async (propertyData: any) => {
   return data;
 };
 
-export const updateProperty = async (id: string, propertyData: any) => {
+export const updateProperty = async (id: string, propertyData: Partial<Property>): Promise<Property> => {
   const { data, error } = await supabase
     .from('properties')
     .update(propertyData)
@@ -447,7 +501,7 @@ export const updateProperty = async (id: string, propertyData: any) => {
   return data;
 };
 
-export const deleteProperty = async (id: string) => {
+export const deleteProperty = async (id: string): Promise<void> => {
   const { error } = await supabase
     .from('properties')
     .delete()
@@ -460,10 +514,13 @@ export const deleteProperty = async (id: string) => {
 };
 
 // Room Type API Functions
-export const fetchRoomTypes = async () => {
+export const fetchRoomTypes = async (): Promise<RoomType[]> => {
   const { data, error } = await supabase
     .from('room_types')
-    .select('*, properties(name)');
+    .select(`
+      *,
+      properties!inner(name)
+    `);
   
   if (error) {
     console.error('Error fetching room types:', error);
@@ -473,10 +530,13 @@ export const fetchRoomTypes = async () => {
   return data || [];
 };
 
-export const fetchRoomTypeById = async (id: string) => {
+export const fetchRoomTypeById = async (id: string): Promise<RoomType> => {
   const { data, error } = await supabase
     .from('room_types')
-    .select('*, properties(name)')
+    .select(`
+      *,
+      properties!inner(name)
+    `)
     .eq('id', id)
     .single();
   
@@ -488,10 +548,10 @@ export const fetchRoomTypeById = async (id: string) => {
   return data;
 };
 
-export const createRoomType = async (roomTypeData: any) => {
+export const createRoomType = async (roomTypeData: Partial<RoomType>): Promise<RoomType> => {
   const { data, error } = await supabase
     .from('room_types')
-    .insert([roomTypeData])
+    .insert(roomTypeData)
     .select()
     .single();
   
@@ -503,7 +563,7 @@ export const createRoomType = async (roomTypeData: any) => {
   return data;
 };
 
-export const updateRoomType = async (id: string, roomTypeData: any) => {
+export const updateRoomType = async (id: string, roomTypeData: Partial<RoomType>): Promise<RoomType> => {
   const { data, error } = await supabase
     .from('room_types')
     .update(roomTypeData)
@@ -519,7 +579,7 @@ export const updateRoomType = async (id: string, roomTypeData: any) => {
   return data;
 };
 
-export const deleteRoomType = async (id: string) => {
+export const deleteRoomType = async (id: string): Promise<void> => {
   const { error } = await supabase
     .from('room_types')
     .delete()
@@ -529,4 +589,178 @@ export const deleteRoomType = async (id: string) => {
     console.error(`Error deleting room type with ID ${id}:`, error);
     throw error;
   }
+};
+
+// Authentication functions for custom email/password login
+export const loginUser = async (email: string, password: string): Promise<User | null> => {
+  try {
+    // Fetch the user with the provided email
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+    
+    if (error || !data) {
+      console.error('Login error - user not found:', error);
+      return null;
+    }
+    
+    // Verify the password using Supabase pgcrypto extension
+    const { data: verifyData, error: verifyError } = await supabase
+      .rpc('verify_user_password', { 
+        user_email: email, 
+        user_password: password 
+      });
+    
+    // If password verification fails or returns false, return null
+    if (verifyError || !verifyData) {
+      console.error('Login error - invalid password:', verifyError);
+      return null;
+    }
+    
+    // Update last login time
+    await supabase
+      .from('users')
+      .update({ last_login: new Date().toISOString() })
+      .eq('id', data.id);
+    
+    return data;
+  } catch (err) {
+    console.error('Unexpected login error:', err);
+    return null;
+  }
+};
+
+export const loginOwner = async (email: string, password: string): Promise<Owner | null> => {
+  try {
+    // Fetch the owner with the provided email
+    const { data, error } = await supabase
+      .from('owners')
+      .select('*')
+      .eq('email', email)
+      .single();
+    
+    if (error || !data) {
+      console.error('Owner login error - owner not found:', error);
+      return null;
+    }
+    
+    // Verify the password using Supabase pgcrypto extension
+    const { data: verifyData, error: verifyError } = await supabase
+      .rpc('verify_owner_password', { 
+        owner_email: email, 
+        owner_password: password 
+      });
+    
+    // If password verification fails or returns false, return null
+    if (verifyError || !verifyData) {
+      console.error('Owner login error - invalid password:', verifyError);
+      return null;
+    }
+    
+    return data;
+  } catch (err) {
+    console.error('Unexpected owner login error:', err);
+    return null;
+  }
+};
+
+// Fetch room owner assignments
+export const fetchRoomOwnerAssignments = async (ownerId: string): Promise<RoomOwnerAssignment[]> => {
+  const { data, error } = await supabase
+    .from('room_owner_assignments')
+    .select(`
+      *,
+      rooms!inner(number, property_id, properties!inner(name))
+    `)
+    .eq('owner_id', ownerId)
+    .eq('active', true);
+  
+  if (error) {
+    console.error(`Error fetching room assignments for owner ID ${ownerId}:`, error);
+    throw error;
+  }
+  
+  return data || [];
+};
+
+// Fetch audit logs
+export const fetchAuditLogs = async (): Promise<AuditLog[]> => {
+  const { data, error } = await supabase
+    .from('audit_logs')
+    .select(`
+      *,
+      users!left(email, first_name, last_name)
+    `)
+    .order('created_at', { ascending: false });
+  
+  if (error) {
+    console.error('Error fetching audit logs:', error);
+    throw error;
+  }
+  
+  return data || [];
+};
+
+// Fetch email templates
+export const fetchEmailTemplates = async (): Promise<EmailTemplate[]> => {
+  const { data, error } = await supabase
+    .from('email_templates')
+    .select('*')
+    .order('name');
+  
+  if (error) {
+    console.error('Error fetching email templates:', error);
+    throw error;
+  }
+  
+  return data || [];
+};
+
+// Fetch SMS templates
+export const fetchSmsTemplates = async (): Promise<SmsTemplate[]> => {
+  const { data, error } = await supabase
+    .from('sms_templates')
+    .select('*')
+    .order('name');
+  
+  if (error) {
+    console.error('Error fetching SMS templates:', error);
+    throw error;
+  }
+  
+  return data || [];
+};
+
+// Fetch settings
+export const fetchSettings = async (): Promise<Settings> => {
+  const { data, error } = await supabase
+    .from('settings')
+    .select('*')
+    .single();
+  
+  if (error) {
+    console.error('Error fetching settings:', error);
+    throw error;
+  }
+  
+  return data;
+};
+
+// Update settings
+export const updateSettings = async (settingsData: Partial<Settings>): Promise<Settings> => {
+  const { data, error } = await supabase
+    .from('settings')
+    .update(settingsData)
+    .eq('id', 1) // We only have one settings record
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error updating settings:', error);
+    throw error;
+  }
+  
+  return data;
 };

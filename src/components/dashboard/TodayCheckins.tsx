@@ -73,7 +73,7 @@ export function TodayCheckins() {
               </div>
               <div className="text-right">
                 <Badge variant="outline" className="mb-1 text-xs bg-blue-50 text-blue-800 border-blue-200">
-                  {format(new Date(checkin.check_in), 'HH:mm')}
+                  {format(new Date(checkin.check_in_date), 'HH:mm')}
                 </Badge>
                 <Link to={`/bookings/${checkin.id}`}>
                   <Button variant="ghost" size="sm" className="h-7 text-xs">Check-in</Button>

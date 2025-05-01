@@ -1,99 +1,175 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { User, Owner } from '@/services/supabase-types';
+import { loginUser, loginOwner } from '@/services/api';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-}
-
-interface AuthContextType {
-  isAuthenticated: boolean;
+type AuthContextType = {
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
+  owner: Owner | null;
+  isAuthenticated: boolean;
+  isOwnerAuthenticated: boolean;
+  loading: boolean;
+  error: string | null;
+  login: (email: string, password: string) => Promise<boolean>;
+  ownerLogin: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
-  ownerLogin: (email: string, password: string) => Promise<void>;
-}
+  ownerLogout: () => void;
+};
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  owner: null,
+  isAuthenticated: false,
+  isOwnerAuthenticated: false,
+  loading: true,
+  error: null,
+  login: async () => false,
+  ownerLogin: async () => false,
+  logout: () => {},
+  ownerLogout: () => {},
+});
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [owner, setOwner] = useState<Owner | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  // Check for stored user/owner on initial load
   useEffect(() => {
-    // Check if user is logged in from localStorage
-    const storedUser = localStorage.getItem('user');
-    const storedIsAuthenticated = localStorage.getItem('isAuthenticated');
+    const storedUser = localStorage.getItem('hotelUser');
+    const storedOwner = localStorage.getItem('hotelOwner');
     
-    if (storedUser && storedIsAuthenticated === 'true') {
-      setUser(JSON.parse(storedUser));
-      setIsAuthenticated(true);
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error('Failed to parse stored user', e);
+        localStorage.removeItem('hotelUser');
+      }
     }
+    
+    if (storedOwner) {
+      try {
+        setOwner(JSON.parse(storedOwner));
+      } catch (e) {
+        console.error('Failed to parse stored owner', e);
+        localStorage.removeItem('hotelOwner');
+      }
+    }
+    
+    setLoading(false);
   }, []);
 
+  // Staff user login
   const login = async (email: string, password: string) => {
-    // This is a mock login function - in a real app, this would call your API
-    // Simulate API call with delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    setLoading(true);
+    setError(null);
     
-    // For demo purposes, we'll just accept any credentials
-    const mockUser = {
-      id: '1',
-      name: 'Admin User',
-      email: email,
-      role: 'admin',
-    };
-    
-    // Store in local storage
-    localStorage.setItem('user', JSON.stringify(mockUser));
-    localStorage.setItem('isAuthenticated', 'true');
-    
-    // Update state
-    setUser(mockUser);
-    setIsAuthenticated(true);
+    try {
+      const userData = await loginUser(email, password);
+      
+      if (userData) {
+        setUser(userData);
+        localStorage.setItem('hotelUser', JSON.stringify(userData));
+        setLoading(false);
+        return true;
+      } else {
+        setError('Invalid email or password');
+        setLoading(false);
+        return false;
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('An error occurred during login');
+      setLoading(false);
+      return false;
+    }
   };
-  
+
+  // Owner login
   const ownerLogin = async (email: string, password: string) => {
-    // This is a mock login function for owners
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    setLoading(true);
+    setError(null);
     
-    const mockUser = {
-      id: '2',
-      name: 'Owner User',
-      email: email,
-      role: 'owner',
-    };
-    
-    localStorage.setItem('user', JSON.stringify(mockUser));
-    localStorage.setItem('isAuthenticated', 'true');
-    
-    setUser(mockUser);
-    setIsAuthenticated(true);
+    try {
+      const ownerData = await loginOwner(email, password);
+      
+      if (ownerData) {
+        setOwner(ownerData);
+        localStorage.setItem('hotelOwner', JSON.stringify(ownerData));
+        setLoading(false);
+        return true;
+      } else {
+        setError('Invalid email or password');
+        setLoading(false);
+        return false;
+      }
+    } catch (err) {
+      console.error('Owner login error:', err);
+      setError('An error occurred during login');
+      setLoading(false);
+      return false;
+    }
   };
-  
+
+  // Staff user logout
   const logout = () => {
-    // Remove from local storage
-    localStorage.removeItem('user');
-    localStorage.removeItem('isAuthenticated');
-    
-    // Update state
     setUser(null);
-    setIsAuthenticated(false);
+    localStorage.removeItem('hotelUser');
+  };
+
+  // Owner logout
+  const ownerLogout = () => {
+    setOwner(null);
+    localStorage.removeItem('hotelOwner');
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, ownerLogin }}>
+    <AuthContext.Provider 
+      value={{ 
+        user, 
+        owner,
+        isAuthenticated: !!user, 
+        isOwnerAuthenticated: !!owner,
+        loading, 
+        error, 
+        login,
+        ownerLogin, 
+        logout,
+        ownerLogout 
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
+export const useAuth = () => useContext(AuthContext);
+
+// Protected route hook 
+export const useRequireAuth = (role?: string[]) => {
+  const { isAuthenticated, user, loading } = useAuth();
+  const [authorized, setAuthorized] = useState(false);
+
+  useEffect(() => {
+    if (!loading) {
+      if (!isAuthenticated) {
+        setAuthorized(false);
+      } else if (role && Array.isArray(role) && user) {
+        setAuthorized(role.includes(user.role));
+      } else {
+        setAuthorized(true);
+      }
+    }
+  }, [isAuthenticated, loading, role, user]);
+
+  return { authorized, loading, isAuthenticated, user };
+};
+
+// Protected owner route hook
+export const useRequireOwnerAuth = () => {
+  const { isOwnerAuthenticated, owner, loading } = useAuth();
+  
+  return { authorized: isOwnerAuthenticated, loading, owner };
+};
