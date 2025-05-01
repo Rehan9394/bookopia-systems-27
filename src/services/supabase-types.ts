@@ -1,4 +1,3 @@
-
 export type Room = {
   id: string;
   number: string;
@@ -78,6 +77,7 @@ export type Booking = {
     last_name: string;
     email: string | null;
     phone: string | null;
+    id_document_url?: string | null;
   };
   guest_name?: string; // Computed property for convenience
 };
@@ -95,6 +95,7 @@ export type User = {
   last_login: string | null;
   created_at: string;
   updated_at: string;
+  name?: string; // Computed property for convenience (first_name + last_name)
 };
 
 export type Owner = {
@@ -117,6 +118,7 @@ export type Owner = {
   status: boolean;
   created_at: string;
   updated_at: string;
+  name?: string; // Computed property for convenience
 };
 
 export type Expense = {
@@ -136,6 +138,8 @@ export type Expense = {
   updated_at: string;
   created_by: string | null;
   updated_by: string | null;
+  property?: string; // For convenience
+  owner?: string; // For convenience
 };
 
 export type CleaningTask = {

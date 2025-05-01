@@ -19,6 +19,9 @@ import { cn } from '@/lib/utils';
 export function OwnerLayout() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  
+  // Compute full name from first_name and last_name
+  const userName = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : '';
 
   const handleLogout = () => {
     logout();
@@ -136,14 +139,16 @@ export function OwnerLayout() {
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                   <Avatar className="h-9 w-9">
                     <AvatarImage src="/avatars/02.png" alt="Avatar" />
-                    <AvatarFallback>OW</AvatarFallback>
+                    <AvatarFallback>
+                      {user?.first_name?.[0]}{user?.last_name?.[0]}
+                    </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user?.name}</p>
+                    <p className="text-sm font-medium leading-none">{userName}</p>
                     <p className="text-xs leading-none text-muted-foreground">
                       {user?.email}
                     </p>

@@ -17,27 +17,28 @@ const BookingEdit = () => {
       // Format the booking data to match the expected structure for the form
       // Ensure all numeric fields are actually numbers
       setFormattedBookingData({
-        reference: bookingData.booking_number || '',
+        reference: bookingData.reference || '',
         guestName: bookingData.guest_name || '',
-        guestEmail: bookingData.guestEmail || '',
-        guestPhone: bookingData.guestPhone || '',
+        guestEmail: bookingData.guests?.email || '',
+        guestPhone: bookingData.guests?.phone || '',
         property: bookingData.rooms?.property || '',
         roomNumber: bookingData.rooms?.number || '',
-        checkIn: new Date(bookingData.check_in),
-        checkOut: new Date(bookingData.check_out),
+        checkIn: new Date(bookingData.check_in_date),
+        checkOut: new Date(bookingData.check_out_date),
         adults: Number(bookingData.adults || 2),
         children: Number(bookingData.children || 0),
-        baseRate: Number(bookingData.baseRate || 150),
-        totalAmount: Number(bookingData.amount || 450),
-        securityDeposit: Number(bookingData.securityDeposit || 0),
+        baseRate: Number(bookingData.base_rate || 150),
+        totalAmount: Number(bookingData.total_amount || 450),
+        securityDeposit: Number(bookingData.security_deposit || 0),
         commission: Number(bookingData.commission || 0),
-        tourismFee: Number(bookingData.tourismFee || 0),
+        tourismFee: Number(bookingData.tourism_fee || 0),
         vat: Number(bookingData.vat || 0),
-        netToOwner: Number(bookingData.netToOwner || 0),
-        notes: bookingData.special_requests || '',
+        netToOwner: Number(bookingData.net_to_owner || 0),
+        notes: bookingData.notes || '',
         status: bookingData.status || 'confirmed',
         paymentStatus: bookingData.payment_status || 'paid',
         sendConfirmation: true,
+        bookingId: bookingData.id // Add the booking ID for the form
       });
     } else if (!isLoading) {
       // Fallback mock data if real data couldn't be fetched
@@ -63,9 +64,10 @@ const BookingEdit = () => {
         status: 'confirmed',
         paymentStatus: 'paid',
         sendConfirmation: true,
+        bookingId: id // Use the ID from params as fallback
       });
     }
-  }, [bookingData, isLoading]);
+  }, [bookingData, isLoading, id]);
   
   if (isLoading) {
     return (
@@ -86,7 +88,7 @@ const BookingEdit = () => {
   
   // Only render the form when we have the formatted data
   return formattedBookingData ? (
-    <AddEditBookingForm mode="edit" bookingData={formattedBookingData} />
+    <AddEditBookingForm mode="edit" bookingId={formattedBookingData.bookingId} initialData={formattedBookingData} />
   ) : null;
 };
 

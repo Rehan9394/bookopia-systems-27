@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -35,7 +36,7 @@ const expenseFormSchema = z.object({
   vendor: z.string().optional(),
   paymentMethod: z.string().optional(),
   notes: z.string().optional(),
-  owner: z.string().optional()
+  owner_id: z.string().optional()
 });
 
 const ExpenseEdit = () => {
@@ -56,7 +57,7 @@ const ExpenseEdit = () => {
       vendor: '',
       paymentMethod: '',
       notes: '',
-      owner: ''
+      owner_id: ''
     },
     mode: "onChange",
   });
@@ -69,11 +70,11 @@ const ExpenseEdit = () => {
         amount: expense.amount,
         date: expense.date,
         category: expense.category,
-        property: expense.property,
+        property: expense.property || '',
         vendor: expense.vendor || '',
-        paymentMethod: expense.paymentMethod || '',
+        paymentMethod: expense.payment_method || '',
         notes: expense.notes || '',
-        owner: expense.owner || ''
+        owner_id: expense.owner_id || ''
       });
     }
   }, [expense, form]);
@@ -187,13 +188,13 @@ const ExpenseEdit = () => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Utilities">Utilities</SelectItem>
-                        <SelectItem value="Maintenance">Maintenance</SelectItem>
-                        <SelectItem value="Supplies">Supplies</SelectItem>
-                        <SelectItem value="Cleaning">Cleaning</SelectItem>
-                        <SelectItem value="Insurance">Insurance</SelectItem>
-                        <SelectItem value="Taxes">Taxes</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
+                        <SelectItem value="utilities">Utilities</SelectItem>
+                        <SelectItem value="maintenance">Maintenance</SelectItem>
+                        <SelectItem value="supplies">Supplies</SelectItem>
+                        <SelectItem value="cleaning">Cleaning</SelectItem>
+                        <SelectItem value="insurance">Insurance</SelectItem>
+                        <SelectItem value="taxes">Taxes</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -287,7 +288,7 @@ const ExpenseEdit = () => {
             
             <FormField
               control={form.control}
-              name="owner"
+              name="owner_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Owner</FormLabel>

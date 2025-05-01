@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Room, 
@@ -106,7 +105,7 @@ export const fetchBookings = async (): Promise<Booking[]> => {
     .select(`
       *,
       rooms!inner(number, property_id, properties!inner(name)),
-      guests!inner(first_name, last_name, email, phone)
+      guests!inner(first_name, last_name, email, phone, id_document_url)
     `);
   
   if (error) {
@@ -132,7 +131,7 @@ export const fetchBookingById = async (id: string): Promise<Booking> => {
     .select(`
       *,
       rooms!inner(number, property_id, properties!inner(name)),
-      guests!inner(first_name, last_name, email, phone)
+      guests!inner(first_name, last_name, email, phone, id_document_url)
     `)
     .eq('id', id)
     .single();
@@ -170,16 +169,49 @@ export const createBooking = async (bookingData: Partial<Booking>, guestData: Pa
         // Update existing guest
         await supabase
           .from('guests')
-          .update(guestData)
+          .update({
+            first_name: guestData.first_name,
+            last_name: guestData.last_name,
+            email: guestData.email,
+            phone: guestData.phone,
+            address: guestData.address,
+            city: guestData.city,
+            state: guestData.state,
+            zip_code: guestData.zip_code,
+            country: guestData.country,
+            nationality: guestData.nationality,
+            passport_number: guestData.passport_number,
+            id_document_url: guestData.id_document_url,
+            notes: guestData.notes
+          })
           .eq('id', guestId);
       }
     }
     
     // If no existing guest was found, create a new one
     if (!guestId) {
+      // Ensure required fields are present
+      if (!guestData.first_name || !guestData.last_name) {
+        throw new Error('First and last name are required for creating a new guest');
+      }
+      
       const { data: newGuest, error: guestError } = await supabase
         .from('guests')
-        .insert(guestData)
+        .insert({
+          first_name: guestData.first_name,
+          last_name: guestData.last_name,
+          email: guestData.email || null,
+          phone: guestData.phone || null,
+          address: guestData.address || null,
+          city: guestData.city || null,
+          state: guestData.state || null,
+          zip_code: guestData.zip_code || null,
+          country: guestData.country || null,
+          nationality: guestData.nationality || null,
+          passport_number: guestData.passport_number || null,
+          id_document_url: guestData.id_document_url || null,
+          notes: guestData.notes || null
+        })
         .select()
         .single();
       
@@ -195,19 +227,56 @@ export const createBooking = async (bookingData: Partial<Booking>, guestData: Pa
   // Generate a unique booking reference
   const reference = `BK-${Date.now().toString().slice(-6)}`;
   
-  // Create the booking
+  // Ensure required fields are present
+  const requiredFields = {
+    room_id: bookingData.room_id,
+    check_in_date: bookingData.check_in_date,
+    check_out_date: bookingData.check_out_date,
+    base_rate: bookingData.base_rate,
+    total_amount: bookingData.total_amount,
+    commission: bookingData.commission,
+    net_to_owner: bookingData.net_to_owner
+  };
+  
+  // Check if any required field is missing
+  const missingFields = Object.entries(requiredFields)
+    .filter(([_, value]) => value === undefined)
+    .map(([key]) => key);
+  
+  if (missingFields.length > 0) {
+    throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+  }
+  
+  // Create the booking with all required fields
   const { data, error } = await supabase
     .from('bookings')
     .insert({
-      ...bookingData,
-      reference,
+      reference: reference,
+      room_id: bookingData.room_id!,
       guest_id: guestId,
+      check_in_date: bookingData.check_in_date!,
+      check_out_date: bookingData.check_out_date!,
+      adults: bookingData.adults || 1,
+      children: bookingData.children || 0,
+      base_rate: bookingData.base_rate!,
+      total_amount: bookingData.total_amount!,
+      security_deposit: bookingData.security_deposit || 0,
+      commission: bookingData.commission!,
+      tourism_fee: bookingData.tourism_fee || 0,
+      vat: bookingData.vat || 0,
+      net_to_owner: bookingData.net_to_owner!,
+      status: bookingData.status || 'pending',
+      payment_status: bookingData.payment_status || 'pending',
+      amount_paid: bookingData.amount_paid || 0,
+      notes: bookingData.notes || null,
+      special_requests: bookingData.special_requests || null,
+      created_by: bookingData.created_by || null,
       created_at: new Date().toISOString()
     })
     .select(`
       *,
       rooms!inner(number, property_id, properties!inner(name)),
-      guests!inner(first_name, last_name, email, phone)
+      guests!inner(first_name, last_name, email, phone, id_document_url)
     `)
     .single();
   
@@ -229,24 +298,49 @@ export const createBooking = async (bookingData: Partial<Booking>, guestData: Pa
 export const updateBooking = async (id: string, bookingData: Partial<Booking>, guestData?: Partial<Guest>): Promise<Booking> => {
   // If guest data is provided, update the guest
   if (guestData && bookingData.guest_id) {
-    await supabase
-      .from('guests')
-      .update(guestData)
-      .eq('id', bookingData.guest_id);
+    // Ensure first_name and last_name are present
+    if (guestData.first_name && guestData.last_name) {
+      await supabase
+        .from('guests')
+        .update({
+          first_name: guestData.first_name,
+          last_name: guestData.last_name,
+          email: guestData.email || null,
+          phone: guestData.phone || null,
+          address: guestData.address || null,
+          city: guestData.city || null,
+          state: guestData.state || null,
+          zip_code: guestData.zip_code || null,
+          country: guestData.country || null,
+          nationality: guestData.nationality || null,
+          passport_number: guestData.passport_number || null,
+          id_document_url: guestData.id_document_url || null,
+          notes: guestData.notes || null
+        })
+        .eq('id', bookingData.guest_id);
+    }
   }
+  
+  // Prepare update data
+  const updateData: any = {
+    ...bookingData,
+    updated_at: new Date().toISOString()
+  };
+  
+  // Remove any calculated or derived properties that shouldn't be sent to the database
+  delete updateData.guest_name;
+  delete updateData.guests;
+  delete updateData.rooms;
   
   // Update the booking
   const { data, error } = await supabase
     .from('bookings')
-    .update({
-      ...bookingData,
-      updated_at: new Date().toISOString()
-    })
+    .update(updateData)
     .eq('id', id)
     .select(`
       *,
       rooms!inner(number, property_id, properties!inner(name)),
-      guests!inner(first_name, last_name, email, phone)
+      guests!inner(first_name, last_name, email, phone, id_document_url)
     `)
     .single();
   
@@ -285,7 +379,7 @@ export const fetchTodayCheckins = async (): Promise<Booking[]> => {
     .select(`
       *,
       rooms!inner(number, property_id, properties!inner(name)),
-      guests!inner(first_name, last_name, email, phone)
+      guests!inner(first_name, last_name, email, phone, id_document_url)
     `)
     .eq('check_in_date', today)
     .eq('status', 'confirmed');
@@ -315,7 +409,7 @@ export const fetchTodayCheckouts = async (): Promise<Booking[]> => {
     .select(`
       *,
       rooms!inner(number, property_id, properties!inner(name)),
-      guests!inner(first_name, last_name, email, phone)
+      guests!inner(first_name, last_name, email, phone, id_document_url)
     `)
     .eq('check_out_date', today)
     .eq('status', 'checked_in');
@@ -471,9 +565,34 @@ export const fetchPropertyById = async (id: string): Promise<Property> => {
 };
 
 export const createProperty = async (propertyData: Partial<Property>): Promise<Property> => {
+  // Ensure required fields are present
+  if (!propertyData.name || 
+      !propertyData.address || 
+      !propertyData.city || 
+      !propertyData.state || 
+      !propertyData.zip_code || 
+      !propertyData.country) {
+    throw new Error('Missing required fields for property');
+  }
+
   const { data, error } = await supabase
     .from('properties')
-    .insert(propertyData)
+    .insert({
+      name: propertyData.name,
+      address: propertyData.address,
+      city: propertyData.city,
+      state: propertyData.state,
+      zip_code: propertyData.zip_code,
+      country: propertyData.country,
+      phone: propertyData.phone || null,
+      email: propertyData.email || null,
+      timezone: propertyData.timezone || 'UTC',
+      latitude: propertyData.latitude || null,
+      longitude: propertyData.longitude || null,
+      description: propertyData.description || null,
+      amenities: propertyData.amenities || null,
+      active: propertyData.active === undefined ? true : propertyData.active
+    })
     .select()
     .single();
   
@@ -549,9 +668,24 @@ export const fetchRoomTypeById = async (id: string): Promise<RoomType> => {
 };
 
 export const createRoomType = async (roomTypeData: Partial<RoomType>): Promise<RoomType> => {
+  // Ensure required fields are present
+  if (!roomTypeData.name || 
+      !roomTypeData.base_rate) {
+    throw new Error('Missing required fields for room type');
+  }
+
   const { data, error } = await supabase
     .from('room_types')
-    .insert(roomTypeData)
+    .insert({
+      name: roomTypeData.name,
+      property_id: roomTypeData.property_id || null,
+      description: roomTypeData.description || null,
+      base_rate: roomTypeData.base_rate,
+      max_occupancy: roomTypeData.max_occupancy || 2,
+      features: roomTypeData.features || null,
+      image_urls: roomTypeData.image_urls || null,
+      active: roomTypeData.active === undefined ? true : roomTypeData.active
+    })
     .select()
     .single();
   
