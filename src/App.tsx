@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -64,7 +65,7 @@ const queryClient = new QueryClient({
 
 const ProtectedRoute = ({ 
   children,
-  requiredRole = ["admin", "staff", "manager"],
+  requiredRole = ["admin", "staff", "agent", "manager"],
 }: { 
   children: JSX.Element,
   requiredRole?: string[]
@@ -131,12 +132,24 @@ const App = () => {
                 <Route path="availability" element={<Availability />} />
                 <Route path="rooms" element={<Rooms />} />
                 <Route path="rooms/view/:id" element={<RoomView />} />
-                <Route path="rooms/add" element={<RoomAdd />} />
-                <Route path="rooms/edit/:id" element={<RoomEdit />} />
+                <Route path="rooms/add" element={
+                  <ProtectedRoute requiredRole={["admin", "manager"]}>
+                    <RoomAdd />
+                  </ProtectedRoute>
+                } />
+                <Route path="rooms/edit/:id" element={
+                  <ProtectedRoute requiredRole={["admin", "manager"]}>
+                    <RoomEdit />
+                  </ProtectedRoute>
+                } />
                 <Route path="expenses" element={<Expenses />} />
                 <Route path="expenses/add" element={<ExpenseAdd />} />
                 <Route path="expenses/:id" element={<ExpenseView />} />
-                <Route path="expenses/edit/:id" element={<ExpenseEdit />} />
+                <Route path="expenses/edit/:id" element={
+                  <ProtectedRoute requiredRole={["admin", "manager"]}>
+                    <ExpenseEdit />
+                  </ProtectedRoute>
+                } />
                 <Route path="cleaning" element={<CleaningStatus />} />
                 <Route path="users" element={
                   <ProtectedRoute requiredRole={["admin"]}>
@@ -158,23 +171,87 @@ const App = () => {
                     <UserEdit />
                   </ProtectedRoute>
                 } />
-                <Route path="owners" element={<Owners />} />
-                <Route path="owners/add" element={<OwnerAdd />} />
-                <Route path="owners/:id" element={<OwnerView />} />
-                <Route path="owners/edit/:id" element={<OwnerEdit />} />
+                <Route path="owners" element={
+                  <ProtectedRoute requiredRole={["admin", "manager"]}>
+                    <Owners />
+                  </ProtectedRoute>
+                } />
+                <Route path="owners/add" element={
+                  <ProtectedRoute requiredRole={["admin", "manager"]}>
+                    <OwnerAdd />
+                  </ProtectedRoute>
+                } />
+                <Route path="owners/:id" element={
+                  <ProtectedRoute requiredRole={["admin", "manager"]}>
+                    <OwnerView />
+                  </ProtectedRoute>
+                } />
+                <Route path="owners/edit/:id" element={
+                  <ProtectedRoute requiredRole={["admin", "manager"]}>
+                    <OwnerEdit />
+                  </ProtectedRoute>
+                } />
                 <Route path="reports" element={<Reports />} />
-                <Route path="audit" element={<AuditLogs />} />
-                <Route path="settings" element={<Settings />} />
-                <Route path="settings/properties/new" element={<PropertyAdd />} />
-                <Route path="settings/properties/edit/:id" element={<PropertyEdit />} />
-                <Route path="settings/room-types/new" element={<RoomTypeAdd />} />
-                <Route path="settings/room-types/edit/:id" element={<RoomTypeEdit />} />
-                <Route path="settings/email-templates" element={<EmailTemplates />} />
-                <Route path="settings/email-templates/new" element={<EmailTemplateAdd />} />
-                <Route path="settings/email-templates/edit/:id" element={<EmailTemplateEdit />} />
-                <Route path="settings/sms-templates" element={<SmsTemplates />} />
-                <Route path="settings/sms-templates/new" element={<SmsTemplateAdd />} />
-                <Route path="settings/sms-templates/edit/:id" element={<SmsTemplateEdit />} />
+                <Route path="audit" element={
+                  <ProtectedRoute requiredRole={["admin", "manager"]}>
+                    <AuditLogs />
+                  </ProtectedRoute>
+                } />
+                <Route path="settings" element={
+                  <ProtectedRoute requiredRole={["admin", "manager"]}>
+                    <Settings />
+                  </ProtectedRoute>
+                } />
+                <Route path="settings/properties/new" element={
+                  <ProtectedRoute requiredRole={["admin", "manager"]}>
+                    <PropertyAdd />
+                  </ProtectedRoute>
+                } />
+                <Route path="settings/properties/edit/:id" element={
+                  <ProtectedRoute requiredRole={["admin", "manager"]}>
+                    <PropertyEdit />
+                  </ProtectedRoute>
+                } />
+                <Route path="settings/room-types/new" element={
+                  <ProtectedRoute requiredRole={["admin", "manager"]}>
+                    <RoomTypeAdd />
+                  </ProtectedRoute>
+                } />
+                <Route path="settings/room-types/edit/:id" element={
+                  <ProtectedRoute requiredRole={["admin", "manager"]}>
+                    <RoomTypeEdit />
+                  </ProtectedRoute>
+                } />
+                <Route path="settings/email-templates" element={
+                  <ProtectedRoute requiredRole={["admin", "manager"]}>
+                    <EmailTemplates />
+                  </ProtectedRoute>
+                } />
+                <Route path="settings/email-templates/new" element={
+                  <ProtectedRoute requiredRole={["admin", "manager"]}>
+                    <EmailTemplateAdd />
+                  </ProtectedRoute>
+                } />
+                <Route path="settings/email-templates/edit/:id" element={
+                  <ProtectedRoute requiredRole={["admin", "manager"]}>
+                    <EmailTemplateEdit />
+                  </ProtectedRoute>
+                } />
+                <Route path="settings/sms-templates" element={
+                  <ProtectedRoute requiredRole={["admin", "manager"]}>
+                    <SmsTemplates />
+                  </ProtectedRoute>
+                } />
+                <Route path="settings/sms-templates/new" element={
+                  <ProtectedRoute requiredRole={["admin", "manager"]}>
+                    <SmsTemplateAdd />
+                  </ProtectedRoute>
+                } />
+                <Route path="settings/sms-templates/edit/:id" element={
+                  <ProtectedRoute requiredRole={["admin", "manager"]}>
+                    <SmsTemplateEdit />
+                  </ProtectedRoute>
+                } />
               </Route>
               
               <Route path="/owner" element={

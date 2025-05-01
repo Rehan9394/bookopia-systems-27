@@ -716,118 +716,78 @@ export const deleteRoomType = async (id: string): Promise<void> => {
   }
 };
 
-// Authentication functions for custom email/password login
+// Mock user login functionality
 export const loginUser = async (email: string, password: string): Promise<User | null> => {
-  try {
-    // Special case for demo credentials
-    if ((email === 'admin@example.com' && password === 'Admin123!') ||
-        (email === 'agent@example.com' && password === 'Agent123!')) {
-      console.log("Using demo credentials");
-      
-      // For demo admin account
-      if (email === 'admin@example.com') {
-        return {
-          id: '00000000-0000-0000-0000-000000000001',
-          email: 'admin@example.com',
-          first_name: 'Demo',
-          last_name: 'Admin',
-          role: 'admin',
-          status: true,
-          last_login: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-      }
-      
-      // For demo agent account
-      if (email === 'agent@example.com') {
-        return {
-          id: '00000000-0000-0000-0000-000000000002',
-          email: 'agent@example.com',
-          first_name: 'Demo',
-          last_name: 'Agent',
-          role: 'staff',
-          status: true,
-          last_login: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-      }
-    }
-    
-    // For regular users, check credentials against the database
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .single();
-    
-    if (error || !data) {
-      console.error('Login error - user not found:', error);
-      return null;
-    }
-    
-    // For all other users, check password match
-    // This is a simplified implementation for development
-    if (data.password !== password) {
-      console.error('Login error - invalid password');
-      return null;
-    }
-    
-    // Update last login time
-    await supabase
-      .from('users')
-      .update({ last_login: new Date().toISOString() })
-      .eq('id', data.id);
-    
-    return data;
-  } catch (err) {
-    console.error('Unexpected login error:', err);
-    return null;
+  console.log("Using demo credentials");
+  
+  // For demo purposes, always log in with demo credentials
+  // In a real app, this would validate against a database
+  if (email === 'admin@example.com') {
+    // Mock admin user
+    return {
+      id: '00000000-0000-0000-0000-000000000001',
+      email: 'admin@example.com',
+      first_name: 'Demo',
+      last_name: 'Admin',
+      role: 'admin',
+      phone: null,
+      avatar_url: null,
+      password: '',
+      status: true,
+      last_login: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+  } else if (email === 'agent@example.com') {
+    // Mock agent/staff user
+    return {
+      id: '00000000-0000-0000-0000-000000000002',
+      email: 'agent@example.com',
+      first_name: 'Demo',
+      last_name: 'Agent',
+      role: 'agent',
+      phone: null,
+      avatar_url: null,
+      password: '',
+      status: true,
+      last_login: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
   }
+  
+  // If credentials don't match demo accounts, return null (login failed)
+  return null;
 };
 
+// Mock owner login functionality
 export const loginOwner = async (email: string, password: string): Promise<Owner | null> => {
-  try {
-    // For the demo account specifically
-    if (email === 'rehan@gmail.com' && password === 'Rehan8688@') {
-      console.log("Using demo owner credentials");
-      
-      // Return a demo owner object directly for quick testing
-      return {
-        id: '00000000-0000-0000-0000-000000000003',
-        email: 'rehan@gmail.com',
-        password: 'Rehan8688@',  // In production, this would be hashed
-        first_name: 'Rehan',
-        last_name: 'Demo',
-        status: true,
-        created_at: new Date().toISOString()
-      };
-    }
-    
-    // For regular users, check credentials normally
-    const { data, error } = await supabase
-      .from('owners')
-      .select('*')
-      .eq('email', email)
-      .maybeSingle();
-    
-    if (error || !data) {
-      console.error('Owner login error - owner not found:', error);
-      return null;
-    }
-    
-    // Direct comparison (in production, this would use proper password verification)
-    if (data.password !== password) {
-      console.error('Owner login error - invalid password');
-      return null;
-    }
-    
-    return data;
-  } catch (err) {
-    console.error('Unexpected owner login error:', err);
-    return null;
+  // For demo purposes, use mock data
+  if (email === 'owner@example.com') {
+    return {
+      id: '00000000-0000-0000-0000-000000000003',
+      email: 'owner@example.com',
+      first_name: 'Demo',
+      last_name: 'Owner',
+      password: '',
+      phone: null,
+      address: '',
+      city: '',
+      state: '',
+      zip_code: '',
+      country: '',
+      notes: '',
+      status: true,
+      joined_date: new Date().toISOString(),
+      birth_date: null,
+      avatar_url: null,
+      citizenship: '',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
   }
+  
+  return null;
 };
 
 // Fetch room owner assignments

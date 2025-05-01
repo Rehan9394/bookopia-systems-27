@@ -18,6 +18,7 @@ import { format } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 import { CreditCard, Trash2, FileText } from 'lucide-react';
 import { deleteBooking, updateBookingStatus } from '@/services/api';
+import { useAuth } from '@/hooks/use-auth';
 
 function formatDate(dateString: string) {
   try {
@@ -63,6 +64,10 @@ export function BookingList({
 }: BookingListProps) {
   const { data: bookings, isLoading, error, refetch } = useBookings();
   const { toast } = useToast();
+  const { user } = useAuth();
+  
+  // Check if user is admin or manager for delete permissions
+  const canDelete = user?.role === 'admin' || user?.role === 'manager';
 
   const handleDeleteBooking = async (id: string) => {
     try {
@@ -224,7 +229,9 @@ export function BookingList({
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem asChild>
-                              <Link to={`/bookings/${booking.id}`}>View Details</Link>
+                              <Link to={`/bookings/${booking.id}`}>
+                                View Details
+                              </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
                               <Link to={`/bookings/edit/${booking.id}`}>
@@ -267,13 +274,15 @@ export function BookingList({
 
                             <DropdownMenuSeparator />
 
-                            <DropdownMenuItem 
-                              className="text-red-600"
-                              onClick={() => handleDeleteBooking(booking.id)}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
+                            {canDelete && (
+                              <DropdownMenuItem 
+                                className="text-red-600"
+                                onClick={() => handleDeleteBooking(booking.id)}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>

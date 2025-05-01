@@ -65,16 +65,16 @@ const ExpenseEdit = () => {
   React.useEffect(() => {
     if (expense) {
       form.reset({
-        id: expense.id,
         description: expense.description || '',
         amount: expense.amount || 0,
-        date: expense.date || '',
-        category: expense.category,
-        property: expense.property || '',
+        date: expense.date ? new Date(expense.date).toISOString().split('T')[0] : '',
+        category: expense.category || '',
+        property: expense.property_id || '',
         vendor: expense.vendor || '',
-        paymentMethod: expense.payment_method || '', // Mapping DB field to form field
+        paymentMethod: expense.payment_method || '',
+        receipt: expense.receipt_url || '',
         notes: expense.notes || '',
-        owner: expense.owner || '' // Use owner, not owner_id
+        owner: expense.owner_id || '',
       });
     }
   }, [expense, form]);

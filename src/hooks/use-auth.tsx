@@ -155,27 +155,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useAuth = () => useContext(AuthContext);
 
 // Protected route hook - added more logging for troubleshooting
-export const useRequireAuth = (role?: string[]) => {
+export const useRequireAuth = (allowedRoles?: string[]) => {
   const { isAuthenticated, user, loading } = useAuth();
   const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
     if (!loading) {
-      console.log("Auth state:", { isAuthenticated, user, role });
+      console.log("Auth state:", { isAuthenticated, user, allowedRoles });
       
       if (!isAuthenticated) {
         console.log("Not authenticated, setting authorized to false");
         setAuthorized(false);
-      } else if (role && Array.isArray(role) && user) {
-        const hasRole = role.includes(user.role);
-        console.log(`User has role ${user.role}, required roles: ${role.join(', ')}. Authorized: ${hasRole}`);
+      } else if (allowedRoles && Array.isArray(allowedRoles) && user) {
+        const hasRole = allowedRoles.includes(user.role);
+        console.log(`User has role ${user.role}, required roles: ${allowedRoles.join(', ')}. Authorized: ${hasRole}`);
         setAuthorized(hasRole);
       } else {
         console.log("No role restrictions, setting authorized to true");
         setAuthorized(true);
       }
     }
-  }, [isAuthenticated, loading, role, user]);
+  }, [isAuthenticated, loading, allowedRoles, user]);
 
   return { authorized, loading, isAuthenticated, user };
 };

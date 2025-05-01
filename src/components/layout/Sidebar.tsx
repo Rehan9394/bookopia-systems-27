@@ -97,13 +97,18 @@ const NavGroup = ({ title, children, collapsed }: NavGroupProps) => {
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
+
+  // Check if user has admin or manager role
+  const isAdminOrManager = user?.role === 'admin' || user?.role === 'manager';
+  // Check if user is admin
+  const isAdmin = user?.role === 'admin';
 
   return (
     <div 
@@ -142,11 +147,11 @@ export function Sidebar() {
         </NavGroup>
         
         <NavGroup title="Administration" collapsed={collapsed}>
-          <NavItem to="/users" icon={Users} label="Users" collapsed={collapsed} />
-          <NavItem to="/owners" icon={UserCheck} label="Owners" collapsed={collapsed} />
+          {isAdmin && <NavItem to="/users" icon={Users} label="Users" collapsed={collapsed} />}
+          {isAdminOrManager && <NavItem to="/owners" icon={UserCheck} label="Owners" collapsed={collapsed} />}
           <NavItem to="/reports" icon={BarChart} label="Reports" collapsed={collapsed} />
-          <NavItem to="/audit" icon={ClipboardList} label="Audit Logs" collapsed={collapsed} />
-          <NavItem to="/settings" icon={Settings} label="Settings" collapsed={collapsed} />
+          {isAdminOrManager && <NavItem to="/audit" icon={ClipboardList} label="Audit Logs" collapsed={collapsed} />}
+          {isAdminOrManager && <NavItem to="/settings" icon={Settings} label="Settings" collapsed={collapsed} />}
         </NavGroup>
       </div>
       
