@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -36,7 +35,7 @@ const expenseFormSchema = z.object({
   vendor: z.string().optional(),
   paymentMethod: z.string().optional(),
   notes: z.string().optional(),
-  owner_id: z.string().optional()
+  owner: z.string().optional()
 });
 
 const ExpenseEdit = () => {
@@ -57,7 +56,7 @@ const ExpenseEdit = () => {
       vendor: '',
       paymentMethod: '',
       notes: '',
-      owner_id: ''
+      owner: ''
     },
     mode: "onChange",
   });
@@ -66,15 +65,16 @@ const ExpenseEdit = () => {
   React.useEffect(() => {
     if (expense) {
       form.reset({
-        description: expense.description,
-        amount: expense.amount,
-        date: expense.date,
+        id: expense.id,
+        description: expense.description || '',
+        amount: expense.amount || 0,
+        date: expense.date || '',
         category: expense.category,
         property: expense.property || '',
         vendor: expense.vendor || '',
-        paymentMethod: expense.payment_method || '', // Using expense.payment_method to match DB field 
+        paymentMethod: expense.payment_method || '', // Mapping DB field to form field
         notes: expense.notes || '',
-        owner_id: expense.owner_id || '' // Using expense.owner_id to match DB field
+        owner: expense.owner || '' // Use owner, not owner_id
       });
     }
   }, [expense, form]);
@@ -288,7 +288,7 @@ const ExpenseEdit = () => {
             
             <FormField
               control={form.control}
-              name="owner_id"
+              name="owner"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Owner</FormLabel>

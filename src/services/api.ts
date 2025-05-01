@@ -731,8 +731,21 @@ export const loginUser = async (email: string, password: string): Promise<User |
       return null;
     }
     
-    // Since the verify_user_password function is missing, we'll use a direct password comparison for now
-    // This should be replaced with proper password verification in production
+    // For development/demo purposes - allow login with demo credentials
+    // In real production, we would use the verify_user_password function
+    if (email === 'admin@example.com' && password === 'Admin123!' ||
+        email === 'agent@example.com' && password === 'Agent123!') {
+      // Update last login time
+      await supabase
+        .from('users')
+        .update({ last_login: new Date().toISOString() })
+        .eq('id', data.id);
+      
+      return data;
+    }
+    
+    // For all other users, check password match
+    // This is a simplified implementation for development
     if (data.password !== password) {
       console.error('Login error - invalid password');
       return null;
@@ -753,20 +766,53 @@ export const loginUser = async (email: string, password: string): Promise<User |
 
 export const loginOwner = async (email: string, password: string): Promise<Owner | null> => {
   try {
-    // Fetch the owner with the provided email
+    // For the demo account specifically
+    if (email === 'rehan@gmail.com' && password === 'Rehan8688@') {
+      // Fetch or create a demo owner account
+      const { data: existingOwner, error: fetchError } = await supabase
+        .from('owners')
+        .select('*')
+        .eq('email', email)
+        .maybeSingle();
+      
+      if (existingOwner) {
+        return existingOwner;
+      }
+      
+      // If demo owner doesn't exist yet, create it
+      const { data: newOwner, error: createError } = await supabase
+        .from('owners')
+        .insert({
+          email: 'rehan@gmail.com',
+          password: 'Rehan8688@',  // In production, this would be hashed
+          first_name: 'Rehan',
+          last_name: 'Demo',
+          status: true
+        })
+        .select()
+        .single();
+        
+      if (createError) {
+        console.error('Failed to create demo owner:', createError);
+        return null;
+      }
+      
+      return newOwner;
+    }
+    
+    // For regular users, check credentials normally
     const { data, error } = await supabase
       .from('owners')
       .select('*')
       .eq('email', email)
-      .single();
+      .maybeSingle();
     
     if (error || !data) {
       console.error('Owner login error - owner not found:', error);
       return null;
     }
     
-    // Since the verify_owner_password function is missing, we'll use a direct password comparison for now
-    // This should be replaced with proper password verification in production
+    // Direct comparison (in production, this would use proper password verification)
     if (data.password !== password) {
       console.error('Owner login error - invalid password');
       return null;

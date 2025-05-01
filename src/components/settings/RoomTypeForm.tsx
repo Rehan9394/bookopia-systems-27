@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
@@ -70,7 +69,7 @@ const RoomTypeForm = ({ typeId }: RoomTypeFormProps) => {
         max_occupancy: parseInt(data.max_occupancy),
         features: data.features || {},
         // Fix: Convert active to boolean explicitly using Boolean()
-        active: Boolean(data.active === true || data.active === 'true')
+        active: Boolean(data.active)
       });
       
       toast({
