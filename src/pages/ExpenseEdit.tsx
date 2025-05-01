@@ -72,9 +72,9 @@ const ExpenseEdit = () => {
         category: expense.category,
         property: expense.property || '',
         vendor: expense.vendor || '',
-        paymentMethod: expense.payment_method || '',
+        paymentMethod: expense.payment_method || '', // Corrected to match DB field
         notes: expense.notes || '',
-        owner_id: expense.owner_id || ''
+        owner_id: expense.owner_id || '' // Added owner_id field
       });
     }
   }, [expense, form]);

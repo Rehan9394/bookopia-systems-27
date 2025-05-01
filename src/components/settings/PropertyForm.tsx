@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
@@ -70,7 +71,8 @@ const PropertyForm = ({ propertyId }: PropertyFormProps) => {
         state: data.state,
         zip_code: data.zip_code,
         country: data.country || 'Unknown',
-        active: true
+        // Fix: Convert active to boolean if it's a string
+        active: data.active === 'true' || data.active === true ? true : false
       });
       
       toast({

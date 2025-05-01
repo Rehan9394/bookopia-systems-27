@@ -88,7 +88,7 @@ const BookingEdit = () => {
   
   // Only render the form when we have the formatted data
   return formattedBookingData ? (
-    <AddEditBookingForm mode="edit" bookingId={formattedBookingData.bookingId} initialData={formattedBookingData} />
+    <AddEditBookingForm mode="edit" bookingId={formattedBookingData.bookingId} />
   ) : null;
 };
 
