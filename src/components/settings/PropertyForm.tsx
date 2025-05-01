@@ -71,7 +71,7 @@ const PropertyForm = ({ propertyId }: PropertyFormProps) => {
         state: data.state,
         zip_code: data.zip_code,
         country: data.country || 'Unknown',
-        // Fix: Convert active to boolean explicitly using Boolean()
+        // Fix: Convert active to boolean explicitly
         active: Boolean(data.active)
       });
       

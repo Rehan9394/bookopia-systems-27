@@ -37,28 +37,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Check for stored user/owner on initial load
   useEffect(() => {
-    const storedUser = localStorage.getItem('hotelUser');
-    const storedOwner = localStorage.getItem('hotelOwner');
-    
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error('Failed to parse stored user', e);
-        localStorage.removeItem('hotelUser');
+    const checkStoredAuth = () => {
+      const storedUser = localStorage.getItem('hotelUser');
+      const storedOwner = localStorage.getItem('hotelOwner');
+      
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          console.log("Found stored user:", parsedUser);
+          setUser(parsedUser);
+        } catch (e) {
+          console.error('Failed to parse stored user', e);
+          localStorage.removeItem('hotelUser');
+        }
       }
-    }
-    
-    if (storedOwner) {
-      try {
-        setOwner(JSON.parse(storedOwner));
-      } catch (e) {
-        console.error('Failed to parse stored owner', e);
-        localStorage.removeItem('hotelOwner');
+      
+      if (storedOwner) {
+        try {
+          setOwner(JSON.parse(storedOwner));
+        } catch (e) {
+          console.error('Failed to parse stored owner', e);
+          localStorage.removeItem('hotelOwner');
+        }
       }
-    }
-    
-    setLoading(false);
+      
+      setLoading(false);
+    };
+
+    checkStoredAuth();
   }, []);
 
   // Staff user login
@@ -70,6 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userData = await loginUser(email, password);
       
       if (userData) {
+        console.log("Login successful, user data:", userData);
         setUser(userData);
         localStorage.setItem('hotelUser', JSON.stringify(userData));
         setLoading(false);
@@ -147,18 +154,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => useContext(AuthContext);
 
-// Protected route hook 
+// Protected route hook - added more logging for troubleshooting
 export const useRequireAuth = (role?: string[]) => {
   const { isAuthenticated, user, loading } = useAuth();
   const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
     if (!loading) {
+      console.log("Auth state:", { isAuthenticated, user, role });
+      
       if (!isAuthenticated) {
+        console.log("Not authenticated, setting authorized to false");
         setAuthorized(false);
       } else if (role && Array.isArray(role) && user) {
-        setAuthorized(role.includes(user.role));
+        const hasRole = role.includes(user.role);
+        console.log(`User has role ${user.role}, required roles: ${role.join(', ')}. Authorized: ${hasRole}`);
+        setAuthorized(hasRole);
       } else {
+        console.log("No role restrictions, setting authorized to true");
         setAuthorized(true);
       }
     }

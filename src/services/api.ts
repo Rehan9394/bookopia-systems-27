@@ -719,7 +719,43 @@ export const deleteRoomType = async (id: string): Promise<void> => {
 // Authentication functions for custom email/password login
 export const loginUser = async (email: string, password: string): Promise<User | null> => {
   try {
-    // Fetch the user with the provided email
+    // Special case for demo credentials
+    if ((email === 'admin@example.com' && password === 'Admin123!') ||
+        (email === 'agent@example.com' && password === 'Agent123!')) {
+      console.log("Using demo credentials");
+      
+      // For demo admin account
+      if (email === 'admin@example.com') {
+        return {
+          id: '00000000-0000-0000-0000-000000000001',
+          email: 'admin@example.com',
+          first_name: 'Demo',
+          last_name: 'Admin',
+          role: 'admin',
+          status: true,
+          last_login: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+      }
+      
+      // For demo agent account
+      if (email === 'agent@example.com') {
+        return {
+          id: '00000000-0000-0000-0000-000000000002',
+          email: 'agent@example.com',
+          first_name: 'Demo',
+          last_name: 'Agent',
+          role: 'staff',
+          status: true,
+          last_login: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+      }
+    }
+    
+    // For regular users, check credentials against the database
     const { data, error } = await supabase
       .from('users')
       .select('*')
@@ -729,19 +765,6 @@ export const loginUser = async (email: string, password: string): Promise<User |
     if (error || !data) {
       console.error('Login error - user not found:', error);
       return null;
-    }
-    
-    // For development/demo purposes - allow login with demo credentials
-    // In real production, we would use the verify_user_password function
-    if (email === 'admin@example.com' && password === 'Admin123!' ||
-        email === 'agent@example.com' && password === 'Agent123!') {
-      // Update last login time
-      await supabase
-        .from('users')
-        .update({ last_login: new Date().toISOString() })
-        .eq('id', data.id);
-      
-      return data;
     }
     
     // For all other users, check password match
@@ -768,36 +791,18 @@ export const loginOwner = async (email: string, password: string): Promise<Owner
   try {
     // For the demo account specifically
     if (email === 'rehan@gmail.com' && password === 'Rehan8688@') {
-      // Fetch or create a demo owner account
-      const { data: existingOwner, error: fetchError } = await supabase
-        .from('owners')
-        .select('*')
-        .eq('email', email)
-        .maybeSingle();
+      console.log("Using demo owner credentials");
       
-      if (existingOwner) {
-        return existingOwner;
-      }
-      
-      // If demo owner doesn't exist yet, create it
-      const { data: newOwner, error: createError } = await supabase
-        .from('owners')
-        .insert({
-          email: 'rehan@gmail.com',
-          password: 'Rehan8688@',  // In production, this would be hashed
-          first_name: 'Rehan',
-          last_name: 'Demo',
-          status: true
-        })
-        .select()
-        .single();
-        
-      if (createError) {
-        console.error('Failed to create demo owner:', createError);
-        return null;
-      }
-      
-      return newOwner;
+      // Return a demo owner object directly for quick testing
+      return {
+        id: '00000000-0000-0000-0000-000000000003',
+        email: 'rehan@gmail.com',
+        password: 'Rehan8688@',  // In production, this would be hashed
+        first_name: 'Rehan',
+        last_name: 'Demo',
+        status: true,
+        created_at: new Date().toISOString()
+      };
     }
     
     // For regular users, check credentials normally
