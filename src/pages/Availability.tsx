@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -6,135 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { CalendarClock, ChevronLeft, ChevronRight, PlusCircle, RefreshCw, Filter, Calendar as CalendarIcon } from 'lucide-react';
+import { CalendarClock, ChevronLeft, ChevronRight, PlusCircle, RefreshCw, Filter, Calendar as CalendarIcon, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-
-interface RoomBooking {
-  id: string;
-  guestName: string;
-  startDate: Date;
-  endDate: Date;
-  status: 'confirmed' | 'checked-in' | 'checked-out' | 'cancelled';
-}
-
-interface Room {
-  id: string;
-  number: string;
-  property: string;
-  type: string;
-  status: 'available' | 'occupied' | 'maintenance';
-  bookings: RoomBooking[];
-}
-
-// Mock data
-const roomsData: Room[] = [
-  {
-    id: '1',
-    number: '101',
-    property: 'Marina Tower',
-    type: 'Deluxe Suite',
-    status: 'available',
-    bookings: [
-      {
-        id: 'b1',
-        guestName: 'John Smith',
-        startDate: new Date('2023-11-15'),
-        endDate: new Date('2023-11-18'),
-        status: 'confirmed'
-      },
-      {
-        id: 'b2',
-        guestName: 'Emma Johnson',
-        startDate: new Date('2023-11-20'),
-        endDate: new Date('2023-11-25'),
-        status: 'confirmed'
-      }
-    ]
-  },
-  {
-    id: '2',
-    number: '102',
-    property: 'Marina Tower',
-    type: 'Standard Room',
-    status: 'occupied',
-    bookings: [
-      {
-        id: 'b3',
-        guestName: 'Michael Chen',
-        startDate: new Date('2023-11-12'),
-        endDate: new Date('2023-11-17'),
-        status: 'checked-in'
-      }
-    ]
-  },
-  {
-    id: '3',
-    number: '201',
-    property: 'Downtown Heights',
-    type: 'Executive Suite',
-    status: 'maintenance',
-    bookings: []
-  },
-  {
-    id: '4',
-    number: '202',
-    property: 'Downtown Heights',
-    type: 'Standard Room',
-    status: 'available',
-    bookings: [
-      {
-        id: 'b4',
-        guestName: 'Sarah Davis',
-        startDate: new Date('2023-11-18'),
-        endDate: new Date('2023-11-20'),
-        status: 'confirmed'
-      }
-    ]
-  },
-  {
-    id: '5',
-    number: '301',
-    property: 'Marina Tower',
-    type: 'Deluxe Suite',
-    status: 'occupied',
-    bookings: [
-      {
-        id: 'b5',
-        guestName: 'Robert Wilson',
-        startDate: new Date('2023-11-14'),
-        endDate: new Date('2023-11-19'),
-        status: 'checked-in'
-      }
-    ]
-  },
-  {
-    id: '6',
-    number: '302',
-    property: 'Marina Tower',
-    type: 'Standard Room',
-    status: 'available',
-    bookings: [
-      {
-        id: 'b6',
-        guestName: 'Lisa Brown',
-        startDate: new Date('2023-11-22'),
-        endDate: new Date('2023-11-25'),
-        status: 'confirmed'
-      }
-    ]
-  },
-  {
-    id: '7',
-    number: '401',
-    property: 'Downtown Heights',
-    type: 'Penthouse Suite',
-    status: 'available',
-    bookings: []
-  }
-];
+import { useRoomAvailability, type RoomAvailability, type AvailabilityBooking } from '@/hooks/useRoomAvailability';
 
 // Generate array of dates for the calendar view
 const generateDates = (startDate: Date, days: number) => {
@@ -148,7 +24,12 @@ const generateDates = (startDate: Date, days: number) => {
 };
 
 // Calculate booking position and width for the calendar view
-const calculateBookingStyle = (booking: RoomBooking, viewStartDate: Date, totalDays: number) => {
+const calculateBookingStyle = (booking: {
+  id: string;
+  startDate: Date;
+  endDate: Date;
+  status: string;
+}, viewStartDate: Date, totalDays: number) => {
   const startDate = new Date(booking.startDate);
   const endDate = new Date(booking.endDate);
   
@@ -183,41 +64,43 @@ const Availability = () => {
   const [roomStatus, setRoomStatus] = useState<string | undefined>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [filteredRooms, setFilteredRooms] = useState<Room[]>(roomsData);
   
+  // Format dates for API call
+  const startDateStr = viewStartDate.toISOString().split('T')[0];
+  const endDateStr = addDays(viewStartDate, displayDays).toISOString().split('T')[0];
+  
+  // Fetch room availability data from the database
+  const { data: roomsData, isLoading, isError, error } = useRoomAvailability(startDateStr, endDateStr);
+  
+  // State for filtered rooms
+  const [filteredRooms, setFilteredRooms] = useState<RoomAvailability[]>([]);
+  
+  // Calendar dates for display
   const calendarDates = generateDates(viewStartDate, displayDays);
 
-  // Apply filters when any filter changes
+  // Apply filters when any filter changes or data loads
   useEffect(() => {
-    let result = roomsData;
+    if (!roomsData) return;
+    
+    let result = [...roomsData];
     
     // Property filter
     if (property && property !== "all") {
       result = result.filter(room => room.property === property);
     }
     
-    // Room type filter
-    if (roomType && roomType !== "all") {
-      result = result.filter(room => room.type === roomType);
-    }
-    
-    // Room status filter
-    if (roomStatus && roomStatus !== "all") {
-      result = result.filter(room => room.status === roomStatus);
-    }
-    
     // Search query filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(room => 
-        room.number.toLowerCase().includes(query) || 
+        room.roomNumber.toLowerCase().includes(query) || 
         room.property.toLowerCase().includes(query) ||
         room.bookings.some(booking => booking.guestName.toLowerCase().includes(query))
       );
     }
     
     setFilteredRooms(result);
-  }, [property, roomType, roomStatus, searchQuery]);
+  }, [property, roomType, roomStatus, searchQuery, roomsData]);
   
   const moveCalendar = (direction: 'prev' | 'next') => {
     const newDate = new Date(viewStartDate);
@@ -272,7 +155,7 @@ const Availability = () => {
     // In a real app, this would open a booking creation form
     toast({
       title: "Create Booking",
-      description: `Room ${filteredRooms.find(r => r.id === roomId)?.number} selected for ${format(date, 'MMMM d, yyyy')}`,
+      description: `Room ${filteredRooms.find(r => r.id === roomId)?.roomNumber} selected for ${format(date, 'MMMM d, yyyy')}`,
     });
   };
   
@@ -283,6 +166,78 @@ const Availability = () => {
       description: `Viewing details for booking #${bookingId}`,
     });
   };
+  
+  // Convert database bookings to the format expected by the UI
+  const convertBookingsForDisplay = (room: RoomAvailability) => {
+    return {
+      id: room.id,
+      number: room.roomNumber,
+      property: room.property,
+      type: 'Standard', // Type is not coming from API, would need to be added
+      status: 'available', // Default status
+      bookings: room.bookings.map(booking => ({
+        id: booking.id,
+        guestName: booking.guestName,
+        startDate: new Date(booking.checkIn),
+        endDate: new Date(booking.checkOut),
+        status: booking.status as 'confirmed' | 'checked-in' | 'checked-out' | 'cancelled'
+      }))
+    };
+  };
+
+  // Get upcoming check-ins and check-outs for the next 7 days
+  const getUpcomingCheckIns = () => {
+    if (!roomsData) return [];
+    
+    const today = new Date();
+    const next7Days = new Date(today);
+    next7Days.setDate(today.getDate() + 7);
+    
+    return roomsData.flatMap(room => 
+      room.bookings
+        .filter(b => 
+          b.status === 'confirmed' && 
+          new Date(b.checkIn) >= today && 
+          new Date(b.checkIn) <= next7Days
+        )
+        .map(booking => ({
+          id: booking.id,
+          guestName: booking.guestName,
+          roomNumber: room.roomNumber,
+          property: room.property,
+          date: new Date(booking.checkIn)
+        }))
+    );
+  };
+  
+  const getUpcomingCheckOuts = () => {
+    if (!roomsData) return [];
+    
+    const today = new Date();
+    const next7Days = new Date(today);
+    next7Days.setDate(today.getDate() + 7);
+    
+    return roomsData.flatMap(room => 
+      room.bookings
+        .filter(b => 
+          b.status === 'checked-in' && 
+          new Date(b.checkOut) >= today && 
+          new Date(b.checkOut) <= next7Days
+        )
+        .map(booking => ({
+          id: booking.id,
+          guestName: booking.guestName,
+          roomNumber: room.roomNumber,
+          property: room.property,
+          date: new Date(booking.checkOut)
+        }))
+    );
+  };
+
+  // Get unique properties for filter
+  const properties = roomsData 
+    ? [...new Set(roomsData.map(room => room.property))] 
+    : [];
 
   return (
     <div className="animate-fade-in">
@@ -382,140 +337,130 @@ const Availability = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Properties</SelectItem>
-                <SelectItem value="Marina Tower">Marina Tower</SelectItem>
-                <SelectItem value="Downtown Heights">Downtown Heights</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={roomType} onValueChange={setRoomType}>
-              <SelectTrigger>
-                <SelectValue placeholder="Room Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="Standard Room">Standard Room</SelectItem>
-                <SelectItem value="Deluxe Suite">Deluxe Suite</SelectItem>
-                <SelectItem value="Executive Suite">Executive Suite</SelectItem>
-                <SelectItem value="Penthouse Suite">Penthouse Suite</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={roomStatus} onValueChange={setRoomStatus}>
-              <SelectTrigger>
-                <SelectValue placeholder="Room Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="available">Available</SelectItem>
-                <SelectItem value="occupied">Occupied</SelectItem>
-                <SelectItem value="maintenance">Maintenance</SelectItem>
+                {properties.map(prop => (
+                  <SelectItem key={prop} value={prop}>{prop}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           
-          <div className="border rounded-md overflow-hidden mb-4">
-            <div className="overflow-x-auto">
-              <div style={{ 
-                minWidth: `${Math.max(displayDays * 80, 1000)}px`, 
-                width: '100%' 
-              }}>
-                <div className="grid grid-cols-[200px_1fr] border-b border-border">
-                  <div className="p-3 font-medium text-sm bg-muted border-r border-border sticky left-0 z-10">Room</div>
-                  <div className={`grid grid-cols-${displayDays} bg-muted`} style={{ gridTemplateColumns: `repeat(${displayDays}, 1fr)` }}>
-                    {calendarDates.map((date, i) => (
-                      <div key={i} className="p-2 text-center border-r border-border last:border-r-0">
-                        {formatDateHeader(date)}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                {filteredRooms.length === 0 ? (
-                  <div className="p-8 text-center">
-                    <p className="text-muted-foreground">No rooms match your filter criteria</p>
-                    <Button 
-                      variant="outline" 
-                      className="mt-4"
-                      onClick={() => {
-                        setProperty("all");
-                        setRoomType("all");
-                        setRoomStatus("all");
-                        setSearchQuery("");
-                      }}
-                    >
-                      Clear All Filters
-                    </Button>
-                  </div>
-                ) : (
-                  filteredRooms.map((room) => (
-                    <div key={room.id} className="grid grid-cols-[200px_1fr] border-b border-border last:border-b-0">
-                      <div className="p-4 border-r border-border flex flex-col sticky left-0 bg-white z-10">
-                        <Link to={`/rooms/view/${room.id}`} className="font-medium hover:text-primary">
-                          Room {room.number}
-                        </Link>
-                        <span className="text-sm text-muted-foreground flex items-center justify-between">
-                          {room.property}
-                          <span className={cn(
-                            "inline-flex items-center ml-2 rounded-full px-2 py-0.5 text-xs",
-                            room.status === 'available' && "bg-green-100 text-green-800",
-                            room.status === 'occupied' && "bg-blue-100 text-blue-800",
-                            room.status === 'maintenance' && "bg-yellow-100 text-yellow-800"
-                          )}>
-                            {room.status}
-                          </span>
-                        </span>
-                      </div>
-                      <div className="relative h-[80px]">
-                        {/* Grid cells for days */}
-                        <div className="grid h-full" style={{ gridTemplateColumns: `repeat(${displayDays}, 1fr)` }}>
-                          {Array.from({ length: displayDays }).map((_, i) => {
-                            const cellDate = new Date(viewStartDate);
-                            cellDate.setDate(cellDate.getDate() + i);
-                            return (
-                              <div 
-                                key={i} 
-                                className={cn(
-                                  "border-r border-border last:border-r-0 hover:bg-muted/50 cursor-pointer",
-                                  cellDate.getDay() === 0 || cellDate.getDay() === 6 ? "bg-red-50/50" : "",
-                                  new Date().toDateString() === cellDate.toDateString() ? "bg-primary/5" : ""
-                                )}
-                                onClick={() => handleCellClick(room.id, cellDate)}
-                              ></div>
-                            );
-                          })}
+          {isLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2 text-lg">Loading room availability...</span>
+            </div>
+          ) : isError ? (
+            <div className="p-8 text-center">
+              <p className="text-red-500">Error loading availability data</p>
+              <p className="text-muted-foreground mt-2">{error instanceof Error ? error.message : 'Unknown error'}</p>
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => window.location.reload()}
+              >
+                Retry
+              </Button>
+            </div>
+          ) : (
+            <div className="border rounded-md overflow-hidden mb-4">
+              <div className="overflow-x-auto">
+                <div style={{ 
+                  minWidth: `${Math.max(displayDays * 80, 1000)}px`, 
+                  width: '100%' 
+                }}>
+                  <div className="grid grid-cols-[200px_1fr] border-b border-border">
+                    <div className="p-3 font-medium text-sm bg-muted border-r border-border sticky left-0 z-10">Room</div>
+                    <div className={`grid`} style={{ gridTemplateColumns: `repeat(${displayDays}, 1fr)` }}>
+                      {calendarDates.map((date, i) => (
+                        <div key={i} className="p-2 text-center border-r border-border last:border-r-0">
+                          {formatDateHeader(date)}
                         </div>
-                        
-                        {/* Bookings */}
-                        {room.bookings.map((booking) => {
-                          const style = calculateBookingStyle(booking, viewStartDate, displayDays);
-                          if (!style) return null;
-                          
-                          return (
-                            <div 
-                              key={booking.id}
-                              className={cn(
-                                "absolute top-[16px] h-[48px] rounded-md cursor-pointer transition-shadow hover:shadow-md flex items-center px-2",
-                                booking.status === 'confirmed' && "bg-blue-100 border border-blue-300",
-                                booking.status === 'checked-in' && "bg-green-100 border border-green-300",
-                                booking.status === 'checked-out' && "bg-gray-100 border border-gray-300",
-                                booking.status === 'cancelled' && "bg-red-100 border border-red-300"
-                              )}
-                              style={{ left: style.left, width: style.width }}
-                              onClick={() => handleBookingClick(booking.id)}
-                            >
-                              <div className="truncate text-xs font-medium">
-                                {booking.guestName}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      ))}
                     </div>
-                  ))
-                )}
+                  </div>
+                  
+                  {filteredRooms.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <p className="text-muted-foreground">No rooms match your filter criteria</p>
+                      <Button 
+                        variant="outline" 
+                        className="mt-4"
+                        onClick={() => {
+                          setProperty("all");
+                          setRoomType("all");
+                          setRoomStatus("all");
+                          setSearchQuery("");
+                        }}
+                      >
+                        Clear All Filters
+                      </Button>
+                    </div>
+                  ) : (
+                    filteredRooms.map((room) => {
+                      const displayRoom = convertBookingsForDisplay(room);
+                      return (
+                        <div key={room.id} className="grid grid-cols-[200px_1fr] border-b border-border last:border-b-0">
+                          <div className="p-4 border-r border-border flex flex-col sticky left-0 bg-white z-10">
+                            <Link to={`/rooms/view/${room.id}`} className="font-medium hover:text-primary">
+                              Room {room.roomNumber}
+                            </Link>
+                            <span className="text-sm text-muted-foreground flex items-center justify-between">
+                              {room.property}
+                            </span>
+                          </div>
+                          <div className="relative h-[80px]">
+                            {/* Grid cells for days */}
+                            <div className="grid h-full" style={{ gridTemplateColumns: `repeat(${displayDays}, 1fr)` }}>
+                              {Array.from({ length: displayDays }).map((_, i) => {
+                                const cellDate = new Date(viewStartDate);
+                                cellDate.setDate(cellDate.getDate() + i);
+                                return (
+                                  <div 
+                                    key={i} 
+                                    className={cn(
+                                      "border-r border-border last:border-r-0 hover:bg-muted/50 cursor-pointer",
+                                      cellDate.getDay() === 0 || cellDate.getDay() === 6 ? "bg-red-50/50" : "",
+                                      new Date().toDateString() === cellDate.toDateString() ? "bg-primary/5" : ""
+                                    )}
+                                    onClick={() => handleCellClick(room.id, cellDate)}
+                                  ></div>
+                                );
+                              })}
+                            </div>
+                            
+                            {/* Bookings */}
+                            {displayRoom.bookings.map((booking) => {
+                              const style = calculateBookingStyle(booking, viewStartDate, displayDays);
+                              if (!style) return null;
+                              
+                              return (
+                                <div 
+                                  key={booking.id}
+                                  className={cn(
+                                    "absolute top-[16px] h-[48px] rounded-md cursor-pointer transition-shadow hover:shadow-md flex items-center px-2",
+                                    booking.status === 'confirmed' && "bg-blue-100 border border-blue-300",
+                                    booking.status === 'checked-in' && "bg-green-100 border border-green-300",
+                                    booking.status === 'checked-out' && "bg-gray-100 border border-gray-300",
+                                    booking.status === 'cancelled' && "bg-red-100 border border-red-300"
+                                  )}
+                                  style={{ left: style.left, width: style.width }}
+                                  onClick={() => handleBookingClick(booking.id)}
+                                >
+                                  <div className="truncate text-xs font-medium">
+                                    {booking.guestName}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
           
           <div className="flex items-center gap-4">
             <div className="text-sm font-medium">Legend:</div>
@@ -545,95 +490,74 @@ const Availability = () => {
           <CardDescription>Check-ins and check-outs in the next 7 days</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium flex items-center gap-2">
-                <CalendarClock className="h-5 w-5 text-blue-500" />
-                Upcoming Check-ins
-              </h3>
-              <div className="space-y-2">
-                {filteredRooms.flatMap(room => 
-                  room.bookings
-                    .filter(b => 
-                      b.status === 'confirmed' && 
-                      b.startDate >= new Date() && 
-                      b.startDate <= new Date(new Date().setDate(new Date().getDate() + 7))
-                    )
-                    .map(booking => (
-                      <div key={booking.id} className="flex justify-between items-center p-3 border rounded-md hover:bg-muted/50">
-                        <div>
-                          <p className="font-medium">{booking.guestName}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Room {room.number}, {room.property}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium">{format(booking.startDate, 'MMM d, yyyy')}</p>
-                          <Button size="sm" variant="outline" asChild className="mt-1">
-                            <Link to={`/bookings/${booking.id}`}>
-                              Details
-                            </Link>
-                          </Button>
-                        </div>
+          {isLoading ? (
+            <div className="flex justify-center items-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <span className="ml-2">Loading upcoming changes...</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium flex items-center gap-2">
+                  <CalendarClock className="h-5 w-5 text-blue-500" />
+                  Upcoming Check-ins
+                </h3>
+                <div className="space-y-2">
+                  {getUpcomingCheckIns().map(checkIn => (
+                    <div key={checkIn.id} className="flex justify-between items-center p-3 border rounded-md hover:bg-muted/50">
+                      <div>
+                        <p className="font-medium">{checkIn.guestName}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Room {checkIn.roomNumber}, {checkIn.property}
+                        </p>
                       </div>
-                    ))
-                )}
-                {!filteredRooms.some(room => 
-                  room.bookings.some(b => 
-                    b.status === 'confirmed' && 
-                    b.startDate >= new Date() && 
-                    b.startDate <= new Date(new Date().setDate(new Date().getDate() + 7))
-                  )
-                ) && (
-                  <p className="text-muted-foreground text-center py-4">No upcoming check-ins</p>
-                )}
+                      <div className="text-right">
+                        <p className="font-medium">{format(checkIn.date, 'MMM d, yyyy')}</p>
+                        <Button size="sm" variant="outline" asChild className="mt-1">
+                          <Link to={`/bookings/${checkIn.id}`}>
+                            Details
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  {getUpcomingCheckIns().length === 0 && (
+                    <p className="text-muted-foreground text-center py-4">No upcoming check-ins</p>
+                  )}
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium flex items-center gap-2">
+                  <CalendarClock className="h-5 w-5 text-green-500" />
+                  Upcoming Check-outs
+                </h3>
+                <div className="space-y-2">
+                  {getUpcomingCheckOuts().map(checkOut => (
+                    <div key={checkOut.id} className="flex justify-between items-center p-3 border rounded-md hover:bg-muted/50">
+                      <div>
+                        <p className="font-medium">{checkOut.guestName}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Room {checkOut.roomNumber}, {checkOut.property}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">{format(checkOut.date, 'MMM d, yyyy')}</p>
+                        <Button size="sm" variant="outline" asChild className="mt-1">
+                          <Link to={`/bookings/${checkOut.id}`}>
+                            Details
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  {getUpcomingCheckOuts().length === 0 && (
+                    <p className="text-muted-foreground text-center py-4">No upcoming check-outs</p>
+                  )}
+                </div>
               </div>
             </div>
-            
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium flex items-center gap-2">
-                <CalendarClock className="h-5 w-5 text-green-500" />
-                Upcoming Check-outs
-              </h3>
-              <div className="space-y-2">
-                {filteredRooms.flatMap(room => 
-                  room.bookings
-                    .filter(b => 
-                      b.status === 'checked-in' && 
-                      b.endDate >= new Date() && 
-                      b.endDate <= new Date(new Date().setDate(new Date().getDate() + 7))
-                    )
-                    .map(booking => (
-                      <div key={booking.id} className="flex justify-between items-center p-3 border rounded-md hover:bg-muted/50">
-                        <div>
-                          <p className="font-medium">{booking.guestName}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Room {room.number}, {room.property}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium">{format(booking.endDate, 'MMM d, yyyy')}</p>
-                          <Button size="sm" variant="outline" asChild className="mt-1">
-                            <Link to={`/bookings/${booking.id}`}>
-                              Details
-                            </Link>
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                )}
-                {!filteredRooms.some(room => 
-                  room.bookings.some(b => 
-                    b.status === 'checked-in' && 
-                    b.endDate >= new Date() && 
-                    b.endDate <= new Date(new Date().setDate(new Date().getDate() + 7))
-                  )
-                ) && (
-                  <p className="text-muted-foreground text-center py-4">No upcoming check-outs</p>
-                )}
-              </div>
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>

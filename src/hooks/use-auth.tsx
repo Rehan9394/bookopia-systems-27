@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Owner } from '@/services/supabase-types';
 import { loginUser, loginOwner } from '@/services/api';
@@ -37,7 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Check for stored user/owner on initial load
   useEffect(() => {
-    const checkStoredAuth = () => {
+    const checkStoredAuth = async () => {
       const storedUser = localStorage.getItem('hotelUser');
       const storedOwner = localStorage.getItem('hotelOwner');
       
@@ -61,7 +60,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
       
-      setLoading(false);
+      // Set loading to false only after state updates have been processed
+      setTimeout(() => setLoading(false), 0);
     };
 
     checkStoredAuth();

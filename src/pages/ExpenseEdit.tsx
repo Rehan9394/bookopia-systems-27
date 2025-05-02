@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader } from 'lucide-react';
 import { useExpense } from '@/hooks/useExpenses';
-import { useToast } from '@/hooks/use-toast';
+import { useProperties } from '@/hooks/useProperties';
+import { useOwners } from '@/hooks/useOwners';
+import { toast } from "sonner";
 import { 
   Form, 
   FormControl, 
@@ -25,120 +27,176 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle, CalendarIcon } from 'lucide-react';
+import { format, parse } from 'date-fns';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { useRooms } from '@/hooks/useRooms';
 
 const expenseFormSchema = z.object({
   description: z.string().min(1, "Description is required"),
   amount: z.coerce.number().positive("Amount must be positive"),
   date: z.string().min(1, "Date is required"),
   category: z.string().min(1, "Category is required"),
-  property: z.string().min(1, "Property is required"),
-  vendor: z.string().optional(),
-  paymentMethod: z.string().optional(),
-  notes: z.string().optional(),
-  owner: z.string().optional()
+  property_id: z.string().optional().nullable(),
+  room_id: z.string().optional().nullable(),
+  vendor: z.string().optional().nullable(),
+  payment_method: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
+  owner_id: z.string().optional().nullable()
 });
+
+type FormValues = z.infer<typeof expenseFormSchema>;
 
 const ExpenseEdit = () => {
   const { id } = useParams();
-  const { data: expense, isLoading, error } = useExpense(id || '');
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const { data: expense, isLoading: loadingExpense, error: expenseError, updateExpense } = useExpense(id || '');
+  const { data: properties, isLoading: loadingProperties } = useProperties();
+  const { data: owners, isLoading: loadingOwners } = useOwners();
+  const { data: rooms, isLoading: loadingRooms } = useRooms();
+  
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedProperty, setSelectedProperty] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const form = useForm({
+  
+  const form = useForm<FormValues>({
     resolver: zodResolver(expenseFormSchema),
     defaultValues: {
       description: '',
       amount: 0,
-      date: '',
+      date: format(new Date(), 'yyyy-MM-dd'),
       category: '',
-      property: '',
+      property_id: '',
+      room_id: '',
       vendor: '',
-      paymentMethod: '',
+      payment_method: '',
       notes: '',
-      owner: ''
-    },
-    mode: "onChange",
+      owner_id: ''
+    }
   });
-
-  // Update form values when expense data is loaded
-  React.useEffect(() => {
+  
+  // Filter rooms by selected property
+  const filteredRooms = rooms?.filter(room => 
+    selectedProperty ? room.property_id === selectedProperty : true
+  );
+  
+  useEffect(() => {
     if (expense) {
       form.reset({
         description: expense.description || '',
-        amount: expense.amount || 0,
-        date: expense.date ? new Date(expense.date).toISOString().split('T')[0] : '',
+        amount: parseFloat(expense.amount) || 0,
+        date: expense.date || format(new Date(), 'yyyy-MM-dd'),
         category: expense.category || '',
-        property: expense.property_id || '',
+        property_id: expense.property_id || '',
+        room_id: expense.room_id || '',
         vendor: expense.vendor || '',
-        paymentMethod: expense.payment_method || '',
-        receipt: expense.receipt_url || '',
+        payment_method: expense.payment_method || '',
         notes: expense.notes || '',
-        owner: expense.owner_id || '',
+        owner_id: expense.owner_id || ''
       });
+      
+      if (expense.date) {
+        try {
+          const parsedDate = parse(expense.date, 'yyyy-MM-dd', new Date());
+          setSelectedDate(parsedDate);
+        } catch (error) {
+          console.error('Error parsing date:', error);
+        }
+      }
+      
+      if (expense.property_id) {
+        setSelectedProperty(expense.property_id);
+      }
     }
   }, [expense, form]);
-
-  const onSubmit = async (values: z.infer<typeof expenseFormSchema>) => {
+  
+  const onSubmit = async (data: FormValues) => {
+    setIsSubmitting(true);
+    
     try {
-      setIsSubmitting(true);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: "Expense Updated",
-        description: "Expense has been updated successfully.",
+      const result = await updateExpense({
+        ...data,
+        date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : data.date
       });
       
-      navigate(`/expenses/${id}`);
+      if (result.success) {
+        toast.success("Expense updated successfully");
+        navigate('/expenses');
+      } else {
+        toast.error(result.message || "Failed to update expense");
+      }
     } catch (error) {
       console.error("Error updating expense:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update expense. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("An error occurred while updating the expense");
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  if (isLoading) {
-    return <div>Loading...</div>;
+  
+  const handlePropertyChange = (value: string) => {
+    setSelectedProperty(value);
+    form.setValue('property_id', value);
+    // Reset room selection when property changes
+    form.setValue('room_id', '');
+  };
+  
+  const loading = loadingExpense || loadingProperties || loadingOwners || loadingRooms;
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-80">
+        <Loader className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading...</span>
+      </div>
+    );
   }
-
-  if (error || !expense) {
-    return <div>Error loading expense</div>;
+  
+  if (expenseError || !expense) {
+    return (
+      <Alert variant="destructive" className="mb-6">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>
+          Failed to load expense data. The expense may not exist or there was a problem retrieving it.
+        </AlertDescription>
+        <Button 
+          className="mt-4"
+          onClick={() => navigate('/expenses')}
+        >
+          Back to Expenses
+        </Button>
+      </Alert>
+    );
   }
-
+  
   return (
     <div className="animate-fade-in">
-      <div className="flex items-center gap-4 mb-8">
-        <Button variant="ghost" asChild>
-          <Link to="/expenses">
-            <ArrowLeft className="h-4 w-4 mr-2" />
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <Link to="/expenses" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-2">
+            <ArrowLeft className="mr-1 h-4 w-4" />
             Back to Expenses
           </Link>
-        </Button>
-        <div>
           <h1 className="text-3xl font-bold">Edit Expense</h1>
-          <p className="text-muted-foreground mt-1">Modify expense information</p>
+          <p className="text-muted-foreground mt-1">Update expense details</p>
         </div>
       </div>
-
-      <Card className="p-6">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <Card className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel>Description*</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter description" {...field} />
+                      <Input {...field} placeholder="Brief description of the expense" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -150,26 +208,62 @@ const ExpenseEdit = () => {
                 name="amount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Amount</FormLabel>
+                    <FormLabel>Amount*</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                      <div className="relative">
+                        <span className="absolute left-3 top-3 text-muted-foreground">$</span>
+                        <Input
+                          {...field}
+                          className="pl-7"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
               <FormField
                 control={form.control}
                 name="date"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Date*</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {selectedDate ? format(selectedDate, "PPP") : 
+                             field.value ? field.value : <span>Pick a date</span>}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={selectedDate}
+                          onSelect={(date) => {
+                            setSelectedDate(date);
+                            if (date) {
+                              field.onChange(format(date, 'yyyy-MM-dd'));
+                            }
+                          }}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -180,47 +274,82 @@ const ExpenseEdit = () => {
                 name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormLabel>Category*</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
+                          <SelectValue placeholder="Select a category" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="utilities">Utilities</SelectItem>
-                        <SelectItem value="maintenance">Maintenance</SelectItem>
-                        <SelectItem value="supplies">Supplies</SelectItem>
-                        <SelectItem value="cleaning">Cleaning</SelectItem>
-                        <SelectItem value="insurance">Insurance</SelectItem>
-                        <SelectItem value="taxes">Taxes</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
+                        <SelectItem value="Maintenance">Maintenance</SelectItem>
+                        <SelectItem value="Utilities">Utilities</SelectItem>
+                        <SelectItem value="Personnel">Personnel</SelectItem>
+                        <SelectItem value="Supplies">Supplies</SelectItem>
+                        <SelectItem value="Marketing">Marketing</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
               <FormField
                 control={form.control}
-                name="property"
+                name="property_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Property</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      value={field.value || ''}
+                      onValueChange={handlePropertyChange}
+                    >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select property" />
+                          <SelectValue placeholder="Select a property" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Beach House">Beach House</SelectItem>
-                        <SelectItem value="Mountain Cabin">Mountain Cabin</SelectItem>
-                        <SelectItem value="Downtown Apartment">Downtown Apartment</SelectItem>
-                        <SelectItem value="Lake House">Lake House</SelectItem>
+                        <SelectItem value="">None</SelectItem>
+                        {properties && properties.map(property => (
+                          <SelectItem key={property.id} value={property.id}>
+                            {property.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="room_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Room</FormLabel>
+                    <Select
+                      value={field.value || ''}
+                      onValueChange={field.onChange}
+                      disabled={!selectedProperty}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={selectedProperty ? "Select a room" : "Select a property first"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {filteredRooms && filteredRooms.map(room => (
+                          <SelectItem key={room.id} value={room.id}>
+                            Room {room.number}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -233,9 +362,86 @@ const ExpenseEdit = () => {
                 name="vendor"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Vendor</FormLabel>
+                    <FormLabel>Vendor/Supplier</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter vendor name (optional)" {...field} />
+                      <Input {...field} placeholder="Name of vendor or supplier" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="payment_method"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Payment Method</FormLabel>
+                    <Select
+                      value={field.value || ''}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select payment method" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="Credit Card">Credit Card</SelectItem>
+                        <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                        <SelectItem value="Cash">Cash</SelectItem>
+                        <SelectItem value="Check">Check</SelectItem>
+                        <SelectItem value="Auto-Payment">Auto-Payment</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="owner_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Owner</FormLabel>
+                    <Select
+                      value={field.value || ''}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select an owner" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {owners && owners.map(owner => (
+                          <SelectItem key={owner.id} value={owner.id}>
+                            {owner.first_name} {owner.last_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem className="col-span-1 md:col-span-2">
+                    <FormLabel>Notes</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Additional notes about this expense"
+                        className="min-h-[120px]"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -243,83 +449,21 @@ const ExpenseEdit = () => {
               />
             </div>
             
-            <FormField
-              control={form.control}
-              name="paymentMethod"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Payment Method</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select payment method" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Credit Card">Credit Card</SelectItem>
-                      <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                      <SelectItem value="Cash">Cash</SelectItem>
-                      <SelectItem value="Check">Check</SelectItem>
-                      <SelectItem value="PayPal">PayPal</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notes</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Enter any additional notes (optional)" 
-                      className="resize-none"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="owner"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Owner</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select an owner" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Owner1">Owner 1</SelectItem>
-                      <SelectItem value="Owner2">Owner 2</SelectItem>
-                      <SelectItem value="Owner3">Owner 3</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <div className="flex justify-end gap-3">
-              <Button variant="outline" type="button" onClick={() => navigate(`/expenses/${id}`)}>
+            <div className="flex justify-end gap-4 mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate('/expenses')}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : "Save Changes"}
+                {isSubmitting ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
-          </form>
-        </Form>
-      </Card>
+          </Card>
+        </form>
+      </Form>
     </div>
   );
 };

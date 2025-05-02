@@ -1,34 +1,38 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { fetchCleaningStatus, updateRoomCleaningStatus } from '@/services/api';
 
-import { cleaningStatus } from "@/lib/mock-data";
-import { useQuery } from "@tanstack/react-query";
+export type CleaningStatusType = 'dirty' | 'cleaning' | 'clean' | 'inspected';
 
-export const useCleaningStatus = () => {
+export interface RoomCleaningStatus {
+  id: string;
+  roomId: string;
+  roomNumber: string;
+  property: string;
+  status: CleaningStatusType;
+  lastCleaned: string | null;
+  nextCheckIn: string | null;
+}
+
+// Hook to fetch cleaning status
+export const useCleaningStatus = (date?: string) => {
   return useQuery({
-    queryKey: ["cleaningStatus"],
-    queryFn: async () => {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      return cleaningStatus;
-    },
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    queryKey: ['cleaningStatus', date],
+    queryFn: () => fetchCleaningStatus(date),
+    refetchInterval: 1000 * 60 * 5, // Refetch every 5 minutes
+    staleTime: 1000 * 60 * 2 // Mark as stale after 2 minutes
   });
 };
 
-export const useRoomCleaningStatus = (roomId: string) => {
-  return useQuery({
-    queryKey: ["cleaningStatus", roomId],
-    queryFn: async () => {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 300));
-      const status = cleaningStatus.find(s => s.roomId === roomId);
-      
-      if (!status) {
-        throw new Error(`Cleaning status for room ID ${roomId} not found`);
-      }
-      
-      return status;
-    },
-    enabled: !!roomId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+// Hook to update room cleaning status
+export const useUpdateCleaningStatus = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ roomId, status, notes }: { roomId: string, status: CleaningStatusType, notes?: string }) => 
+      updateRoomCleaningStatus(roomId, status, notes),
+    onSuccess: () => {
+      // Invalidate cleaning status queries to trigger refetch
+      queryClient.invalidateQueries({ queryKey: ['cleaningStatus'] });
+    }
   });
 };

@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft } from 'lucide-react';
-import { useOwner } from '@/hooks/useOwners';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { useOwner, useUpdateOwner } from '@/hooks/useOwners';
 import { useToast } from '@/components/ui/use-toast';
 import { 
   Form, 
@@ -19,6 +19,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { OwnerRoomsList } from '@/components/owners/OwnerRoomsList';
+import { Owner } from '@/services/supabase-types';
 
 const ownerFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -37,9 +38,9 @@ const ownerFormSchema = z.object({
 const OwnerEdit = () => {
   const { id } = useParams<{ id: string }>();
   const { data: owner, isLoading, error } = useOwner(id || '');
+  const updateOwnerMutation = useUpdateOwner();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(ownerFormSchema),
@@ -78,26 +79,41 @@ const OwnerEdit = () => {
   }, [owner, form]);
 
   const onSubmit = async (values: z.infer<typeof ownerFormSchema>) => {
+    if (!id) return;
+    
     try {
-      setIsSubmitting(true);
+      // Split the name into first and last name
+      const nameParts = values.name.split(' ');
+      const firstName = nameParts[0];
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const ownerData: Partial<Owner> = {
+        first_name: firstName,
+        last_name: lastName,
+        email: values.email,
+        phone: values.phone,
+        // Format financial information according to the database structure
+        financial_info: {
+          bank_name: values.bankName,
+          account_number: values.accountNumber,
+          routing_number: values.routingNumber
+        }
+      };
+      
+      await updateOwnerMutation.mutateAsync({ 
+        id, 
+        data: ownerData 
+      });
       
       toast({
-        title: "Owner Updated",
-        description: "Owner has been updated successfully.",
+        title: "Success",
+        description: "Owner information has been updated successfully."
       });
       
       navigate(`/owners/${id}`);
     } catch (error) {
       console.error("Error updating owner:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update owner. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
+      // Error is handled by the mutation hook
     }
   };
 
@@ -341,8 +357,15 @@ const OwnerEdit = () => {
               <Button variant="outline" type="button" onClick={() => navigate(`/owners/${id}`)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : "Save Changes"}
+              <Button type="submit" disabled={updateOwnerMutation.isPending}>
+                {updateOwnerMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
               </Button>
             </div>
           </form>

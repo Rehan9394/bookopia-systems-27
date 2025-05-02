@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -85,6 +84,21 @@ const ProtectedRoute = ({
   }
   
   console.log("Access granted to protected route");
+  return children;
+};
+
+// New component for owner routes protection
+const ProtectedOwnerRoute = ({ children }: { children: JSX.Element }) => {
+  const { isOwnerAuthenticated } = useAuth();
+  
+  console.log("Protected owner route check:", { isOwnerAuthenticated });
+  
+  if (!isOwnerAuthenticated) {
+    console.log("Owner not authenticated, redirecting to owner login");
+    return <Navigate to="/owner/login" />;
+  }
+  
+  console.log("Access granted to protected owner route");
   return children;
 };
 
@@ -255,9 +269,9 @@ const App = () => {
               </Route>
               
               <Route path="/owner" element={
-                <ProtectedRoute requiredRole={["owner"]}>
+                <ProtectedOwnerRoute>
                   <OwnerLayout />
-                </ProtectedRoute>
+                </ProtectedOwnerRoute>
               }>
                 <Route path="dashboard" element={<OwnerDashboard />} />
                 <Route path="bookings" element={<OwnerBookings />} />

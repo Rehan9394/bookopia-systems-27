@@ -1,8 +1,12 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, DoorClosed } from 'lucide-react';
+import { 
+  Plus, 
+  Trash2, 
+  DoorClosed, 
+  Home 
+} from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -11,8 +15,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
-import { rooms, ownerRooms } from '@/lib/mock-data';
+import { useOwner, useAssignRoomToOwner, useRemoveRoomFromOwner } from '@/hooks/useOwners';
+import { useAvailableRooms } from '@/hooks/useRooms';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 interface OwnerRoomsListProps {
   ownerId: string;
@@ -21,66 +36,139 @@ interface OwnerRoomsListProps {
 
 export const OwnerRoomsList = ({ ownerId, isEditing = false }: OwnerRoomsListProps) => {
   const { toast } = useToast();
-  const [ownerRoomsList, setOwnerRoomsList] = useState(
-    ownerRooms.filter(or => or.ownerId === ownerId)
-  );
+  const { data: owner, isLoading: isLoadingOwner } = useOwner(ownerId);
+  const { data: availableRooms, isLoading: isLoadingRooms } = useAvailableRooms();
+  const assignRoomMutation = useAssignRoomToOwner(ownerId);
+  const removeRoomMutation = useRemoveRoomFromOwner(ownerId);
+  
+  const [selectedRoomId, setSelectedRoomId] = useState<string>("");
+  const [dialogOpen, setDialogOpen] = useState<boolean>(false);
+  
+  const handleAddRoom = async () => {
+    if (!selectedRoomId) return;
+    
+    try {
+      await assignRoomMutation.mutateAsync({ 
+        room_id: selectedRoomId,
+        commission_rate: 10 // Add default commission rate
+      });
+      
+      toast({
+        title: "Room Added",
+        description: "Room has been successfully assigned to the owner.",
+      });
+      
+      // Reset selection
+      setSelectedRoomId("");
+      setDialogOpen(false);
+    } catch (error) {
+      console.error("Error assigning room:", error);
+      toast({
+        title: "Error",
+        description: "Failed to assign room to the owner. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
 
-  const ownerRoomDetails = ownerRoomsList.map(or => {
-    const room = rooms.find(r => r.id === or.roomId);
+  const handleDeleteRoom = async (roomId: string) => {
+    try {
+      await removeRoomMutation.mutateAsync(roomId);
+      
+      toast({
+        title: "Room Removed",
+        description: "Room has been removed from the owner's portfolio.",
+      });
+    } catch (error) {
+      console.error("Error removing room assignment:", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove room from the owner. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (isLoadingOwner || isLoadingRooms) {
+    return (
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Owner Rooms</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Get room details for each assignment
+  const ownerRoomDetails = owner?.rooms?.map(assignment => {
+    const roomDetails = owner?.roomDetails?.find(room => room.id === assignment.room_id);
     return {
-      ...or,
-      roomDetails: room
+      ...assignment,
+      roomDetails
     };
-  });
-
-  const availableRooms = rooms.filter(
-    room => !ownerRooms.some(or => or.roomId === room.id && or.ownerId === ownerId)
-  );
-
-  const handleAddRoom = (roomId: string) => {
-    const newOwnerRoom = {
-      id: `or${Date.now()}`,
-      ownerId,
-      roomId,
-      assignedDate: new Date().toISOString().split('T')[0]
-    };
-    setOwnerRoomsList([...ownerRoomsList, newOwnerRoom]);
-    toast({
-      title: "Room Added",
-      description: "Room has been successfully assigned to the owner.",
-    });
-  };
-
-  const handleDeleteRoom = (roomId: string) => {
-    setOwnerRoomsList(ownerRoomsList.filter(or => or.roomId !== roomId));
-    toast({
-      title: "Room Removed",
-      description: "Room has been removed from the owner's portfolio.",
-    });
-  };
+  }) || [];
 
   return (
     <Card className="mt-6">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Owner Rooms</CardTitle>
-        {isEditing && availableRooms.length > 0 && (
-          <div className="flex gap-2">
-            <select
-              className="border rounded p-2"
-              onChange={(e) => e.target.value && handleAddRoom(e.target.value)}
-              value=""
-            >
-              <option value="">Add Room</option>
-              {availableRooms.map((room) => (
-                <option key={room.id} value={room.id}>
-                  {room.number} - {room.property}
-                </option>
-              ))}
-            </select>
-            <Button size="icon">
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
+        {isEditing && (
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Room
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Room to Owner</DialogTitle>
+                <DialogDescription>
+                  Assign an available room to this owner's portfolio.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="room">Select Room</Label>
+                  <Select value={selectedRoomId} onValueChange={setSelectedRoomId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a room" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableRooms && availableRooms.length > 0 ? (
+                        availableRooms.map((room) => (
+                          <SelectItem key={room.id} value={room.id}>
+                            Room {room.number} - {room.property}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="none" disabled>
+                          No available rooms to assign
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                <Button 
+                  onClick={handleAddRoom} 
+                  disabled={!selectedRoomId || assignRoomMutation.isPending}>
+                  {assignRoomMutation.isPending ? "Adding..." : "Add Room"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         )}
       </CardHeader>
       <CardContent>
@@ -96,18 +184,19 @@ export const OwnerRoomsList = ({ ownerId, isEditing = false }: OwnerRoomsListPro
               </TableRow>
             </TableHeader>
             <TableBody>
-              {ownerRoomDetails.map((or) => (
-                <TableRow key={or.id}>
-                  <TableCell>{or.roomDetails?.number}</TableCell>
-                  <TableCell>{or.roomDetails?.property}</TableCell>
-                  <TableCell>{or.roomDetails?.type}</TableCell>
-                  <TableCell>{or.roomDetails?.status}</TableCell>
+              {ownerRoomDetails.map((assignment) => (
+                <TableRow key={assignment.id}>
+                  <TableCell>{assignment.roomDetails?.number}</TableCell>
+                  <TableCell>{assignment.roomDetails?.property}</TableCell>
+                  <TableCell>{assignment.roomDetails?.type}</TableCell>
+                  <TableCell>{assignment.roomDetails?.status}</TableCell>
                   {isEditing && (
                     <TableCell>
                       <Button
                         variant="destructive"
                         size="icon"
-                        onClick={() => handleDeleteRoom(or.roomId)}
+                        onClick={() => handleDeleteRoom(assignment.room_id)}
+                        disabled={removeRoomMutation.isPending}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -121,6 +210,16 @@ export const OwnerRoomsList = ({ ownerId, isEditing = false }: OwnerRoomsListPro
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <DoorClosed className="h-8 w-8 text-muted-foreground mb-2" />
             <p className="text-muted-foreground">No rooms assigned to this owner</p>
+            {isEditing && availableRooms && availableRooms.length > 0 && (
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => setDialogOpen(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add the first room
+              </Button>
+            )}
           </div>
         )}
       </CardContent>

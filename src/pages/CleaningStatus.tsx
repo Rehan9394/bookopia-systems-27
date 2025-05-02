@@ -1,314 +1,371 @@
-
 import React, { useState, useEffect } from 'react';
-import { Input } from '@/components/ui/input';
-import { Search, RotateCw, CheckCircle, XCircle, Clock } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { useSearchParams } from 'react-router-dom';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { useCleaningStatus, useUpdateCleaningStatus, CleaningStatusType } from '@/hooks/useCleaningStatus';
+import { Loader2, Search, Filter, RefreshCw, CalendarIcon, ListFilter, CheckCircle2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-type CleaningStatus = 'Clean' | 'Dirty' | 'In Progress';
-
-interface Room {
-  id: number;
-  roomNumber: string;
-  property: string;
-  status: CleaningStatus;
-  lastCleaned: string | null;
-  nextCheckIn: string | null;
+interface StatusUpdateParams {
+  roomId: string;
+  status: CleaningStatusType;
+  notes?: string;
 }
 
 const CleaningStatus = () => {
   const { toast } = useToast();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [property, setProperty] = useState<string>("all");
+  const [status, setStatus] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [date, setDate] = useState<Date>(new Date());
+  const [activeTab, setActiveTab] = useState("all");
   
-  // Sample data - in a real app this would come from a database
-  const [allRooms, setAllRooms] = useState<Room[]>([
-    { id: 1, roomNumber: '101', property: 'Marina Tower', status: 'Clean', lastCleaned: '2023-11-15 14:30', nextCheckIn: '2023-11-16 15:00' },
-    { id: 2, roomNumber: '102', property: 'Marina Tower', status: 'Dirty', lastCleaned: '2023-11-14 10:15', nextCheckIn: '2023-11-17 14:00' },
-    { id: 3, roomNumber: '201', property: 'Marina Tower', status: 'In Progress', lastCleaned: null, nextCheckIn: '2023-11-16 16:00' },
-    { id: 4, roomNumber: '301', property: 'Downtown Heights', status: 'Clean', lastCleaned: '2023-11-15 12:45', nextCheckIn: null },
-    { id: 5, roomNumber: '302', property: 'Downtown Heights', status: 'Dirty', lastCleaned: '2023-11-13 09:30', nextCheckIn: '2023-11-18 13:00' },
-    { id: 6, roomNumber: '401', property: 'Downtown Heights', status: 'Clean', lastCleaned: '2023-11-15 15:20', nextCheckIn: '2023-11-17 15:00' },
-  ]);
+  // Format date for API
+  const dateStr = date.toISOString().split('T')[0];
   
-  const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('q') || "");
-  const [propertyFilter, setPropertyFilter] = useState<string>(searchParams.get('property') || "all");
-  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || "all");
-  const [filteredRooms, setFilteredRooms] = useState<Room[]>(allRooms);
-
-  // Apply filters when filter values change
+  // Fetch cleaning status data from the database
+  const { data, isLoading, isError, error, mutate } = useCleaningStatus(dateStr);
+  
+  // State for filtered rooms
+  const [filteredRooms, setFilteredRooms] = useState<any[]>([]);
+  
+  // Apply filters when any filter changes or data loads
   useEffect(() => {
-    let filtered = allRooms;
+    if (!data) return;
     
-    // Apply search filter
+    let result = [...data];
+    
+    // Property filter
+    if (property !== "all") {
+      result = result.filter(room => room.property === property);
+    }
+    
+    // Status filter
+    if (status !== "all") {
+      result = result.filter(room => room.cleaningStatus === status);
+    }
+    
+    // Tab filter
+    if (activeTab === "dirty") {
+      result = result.filter(room => room.cleaningStatus === "dirty" || room.cleaningStatus === "cleaning");
+    } else if (activeTab === "clean") {
+      result = result.filter(room => room.cleaningStatus === "clean" || room.cleaningStatus === "inspected");
+    } else if (activeTab === "checkout") {
+      result = result.filter(room => room.hasCheckout);
+    } else if (activeTab === "checkin") {
+      result = result.filter(room => room.hasCheckin);
+    }
+    
+    // Search query filter
     if (searchQuery) {
-      filtered = filtered.filter(room => 
-        room.roomNumber.toLowerCase().includes(searchQuery.toLowerCase())
+      const query = searchQuery.toLowerCase();
+      result = result.filter(room => 
+        room.roomNumber.toLowerCase().includes(query) || 
+        room.property.toLowerCase().includes(query) ||
+        (room.notes && room.notes.toLowerCase().includes(query))
       );
     }
     
-    // Apply property filter
-    if (propertyFilter !== 'all') {
-      filtered = filtered.filter(room => {
-        if (propertyFilter === 'marina') {
-          return room.property === 'Marina Tower';
-        } else if (propertyFilter === 'downtown') {
-          return room.property === 'Downtown Heights';
-        }
-        return true;
+    setFilteredRooms(result);
+  }, [property, status, activeTab, searchQuery, data]);
+  
+  // Update cleaning status for a room
+  const updateCleaningStatusMutation = useUpdateCleaningStatus();
+  
+  const updateRoomStatus = async ({ roomId, status, notes }: StatusUpdateParams) => {
+    try {
+      await updateCleaningStatusMutation.mutateAsync({ roomId, status, notes });
+      
+      // Show success toast
+      toast({
+        title: "Status updated",
+        description: `Room cleaning status updated to ${status}`,
+      });
+      
+      // Refetch data will happen automatically due to invalidation in the hook
+    } catch (error) {
+      console.error("Error updating cleaning status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update room status",
+        variant: "destructive",
       });
     }
-    
-    // Apply status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(room => {
-        if (statusFilter === 'clean') {
-          return room.status === 'Clean';
-        } else if (statusFilter === 'dirty') {
-          return room.status === 'Dirty';
-        } else if (statusFilter === 'inprogress') {
-          return room.status === 'In Progress';
-        }
-        return true;
-      });
-    }
-    
-    setFilteredRooms(filtered);
-    
-    // Update URL with filters
-    const params = new URLSearchParams();
-    if (searchQuery) params.set('q', searchQuery);
-    if (propertyFilter !== 'all') params.set('property', propertyFilter);
-    if (statusFilter !== 'all') params.set('status', statusFilter);
-    
-    setSearchParams(params, { replace: true });
-  }, [searchQuery, propertyFilter, statusFilter, allRooms]);
-
-  const updateStatus = (roomId: number, newStatus: CleaningStatus) => {
-    setAllRooms(allRooms.map(room => 
-      room.id === roomId 
-        ? { 
-            ...room, 
-            status: newStatus, 
-            lastCleaned: newStatus === 'Clean' ? new Date().toISOString().replace('T', ' ').substring(0, 16) : room.lastCleaned 
-          } 
-        : room
-    ));
-    
-    toast({
-      description: `Room ${allRooms.find(room => room.id === roomId)?.roomNumber} marked as ${newStatus}`,
-    });
   };
-
-  const getStatusIcon = (status: CleaningStatus) => {
-    switch(status) {
-      case 'Clean': 
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'Dirty': 
-        return <XCircle className="h-5 w-5 text-red-500" />;
-      case 'In Progress': 
-        return <Clock className="h-5 w-5 text-yellow-500" />;
+  
+  // Get unique properties for filter
+  const properties = data 
+    ? [...new Set(data.map(room => room.property))] 
+    : [];
+  
+  // Count items in each tab
+  const getCounts = () => {
+    if (!data) return { all: 0, dirty: 0, clean: 0, checkout: 0, checkin: 0 };
+    
+    return {
+      all: data.length,
+      dirty: data.filter(r => r.cleaningStatus === "dirty" || r.cleaningStatus === "cleaning").length,
+      clean: data.filter(r => r.cleaningStatus === "clean" || r.cleaningStatus === "inspected").length,
+      checkout: data.filter(r => r.hasCheckout).length,
+      checkin: data.filter(r => r.hasCheckin).length
+    };
+  };
+  
+  const counts = getCounts();
+  
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'dirty':
+        return <Badge variant="outline" className="bg-red-50 text-red-700 hover:bg-red-50">Dirty</Badge>;
+      case 'cleaning':
+        return <Badge variant="outline" className="bg-amber-50 text-amber-700 hover:bg-amber-50">Cleaning</Badge>;
+      case 'clean':
+        return <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-50">Clean</Badge>;
+      case 'inspected':
+        return <Badge variant="outline" className="bg-blue-50 text-blue-700 hover:bg-blue-50">Inspected</Badge>;
+      default:
+        return <Badge variant="outline">Unknown</Badge>;
     }
   };
-
-  const getStatusBadge = (status: CleaningStatus) => {
-    switch(status) {
-      case 'Clean': 
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Clean</Badge>;
-      case 'Dirty': 
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Needs Cleaning</Badge>;
-      case 'In Progress': 
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">In Progress</Badge>;
+  
+  const getNextStatus = (currentStatus: string) => {
+    switch (currentStatus) {
+      case 'dirty':
+        return 'cleaning';
+      case 'cleaning':
+        return 'clean';
+      case 'clean':
+        return 'inspected';
+      case 'inspected':
+        return 'inspected'; // No next status
+      default:
+        return 'dirty';
     }
   };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast({
-      description: searchQuery ? `Searching for room "${searchQuery}"` : "Showing all rooms",
-    });
+  
+  const getStatusActionButton = (room: any) => {
+    const nextStatus = getNextStatus(room.cleaningStatus);
+    
+    if (room.cleaningStatus === 'inspected') {
+      return (
+        <Button variant="ghost" size="sm" className="text-green-600" disabled>
+          <CheckCircle2 className="mr-1 h-4 w-4" />
+          Completed
+        </Button>
+      );
+    }
+    
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => updateRoomStatus({ roomId: room.id, status: nextStatus })}
+      >
+        Mark as {nextStatus.charAt(0).toUpperCase() + nextStatus.slice(1)}
+      </Button>
+    );
   };
-
-  const clearFilters = () => {
-    setSearchQuery("");
-    setPropertyFilter("all");
-    setStatusFilter("all");
-    setSearchParams({});
-    toast({
-      description: "All filters have been cleared",
-    });
-  };
-
-  const cleanCount = filteredRooms.filter(room => room.status === 'Clean').length;
-  const dirtyCount = filteredRooms.filter(room => room.status === 'Dirty').length;
-  const inProgressCount = filteredRooms.filter(room => room.status === 'In Progress').length;
-
+  
   return (
     <div className="animate-fade-in">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Cleaning Status</h1>
-        <p className="text-muted-foreground mt-1">Manage room cleaning status across all properties</p>
-      </div>
-      
-      <div className="flex flex-wrap gap-4 mb-8">
-        <div className="bg-green-100 text-green-800 px-6 py-4 rounded-md flex items-center gap-3">
-          <div className="h-4 w-4 rounded-full bg-green-500" />
-          <span className="font-medium text-lg">{cleanCount} Clean</span>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold">Cleaning Status</h1>
+          <p className="text-muted-foreground mt-1">Monitor and update room cleaning status</p>
         </div>
-        <div className="bg-yellow-100 text-yellow-800 px-6 py-4 rounded-md flex items-center gap-3">
-          <div className="h-4 w-4 rounded-full bg-yellow-500" />
-          <span className="font-medium text-lg">{inProgressCount} In Progress</span>
-        </div>
-        <div className="bg-red-100 text-red-800 px-6 py-4 rounded-md flex items-center gap-3">
-          <div className="h-4 w-4 rounded-full bg-red-500" />
-          <span className="font-medium text-lg">{dirtyCount} Needs Cleaning</span>
-        </div>
-      </div>
-      
-      <Card className="p-6 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="relative">
-            <form onSubmit={handleSearch}>
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search by room number..." 
-                className="pl-10"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+        <div className="flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4" />
+                {format(date, 'MMMM d, yyyy')}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={(date) => date && setDate(date)}
+                initialFocus
               />
-            </form>
+            </PopoverContent>
+          </Popover>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setDate(new Date())}
+            title="Jump to today"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+        <TabsList className="grid grid-cols-2 md:grid-cols-5 mb-4">
+          <TabsTrigger value="all" className="flex items-center justify-center gap-2">
+            All
+            <Badge variant="secondary">{counts.all}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="dirty" className="flex items-center justify-center gap-2">
+            Dirty
+            <Badge variant="secondary">{counts.dirty}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="clean" className="flex items-center justify-center gap-2">
+            Clean
+            <Badge variant="secondary">{counts.clean}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="checkout" className="flex items-center justify-center gap-2">
+            Today's Checkouts
+            <Badge variant="secondary">{counts.checkout}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="checkin" className="flex items-center justify-center gap-2">
+            Today's Checkins
+            <Badge variant="secondary">{counts.checkin}</Badge>
+          </TabsTrigger>
+        </TabsList>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="relative">
+            <Input
+              placeholder="Search rooms..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8"
+            />
+            <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           </div>
           
-          <Select value={propertyFilter} onValueChange={setPropertyFilter}>
+          <Select value={property} onValueChange={setProperty}>
             <SelectTrigger>
-              <SelectValue placeholder="Filter by property" />
+              <SelectValue placeholder="All Properties" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Properties</SelectItem>
-              <SelectItem value="marina">Marina Tower</SelectItem>
-              <SelectItem value="downtown">Downtown Heights</SelectItem>
+              {properties.map(prop => (
+                <SelectItem key={prop} value={prop}>{prop}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
           
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={status} onValueChange={setStatus}>
             <SelectTrigger>
-              <SelectValue placeholder="Filter by status" />
+              <SelectValue placeholder="All Statuses" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="dirty">Dirty</SelectItem>
+              <SelectItem value="cleaning">Cleaning</SelectItem>
               <SelectItem value="clean">Clean</SelectItem>
-              <SelectItem value="dirty">Needs Cleaning</SelectItem>
-              <SelectItem value="inprogress">In Progress</SelectItem>
+              <SelectItem value="inspected">Inspected</SelectItem>
             </SelectContent>
           </Select>
         </div>
         
-        {(searchQuery || propertyFilter !== "all" || statusFilter !== "all") && (
-          <div className="mt-4 flex justify-between items-center">
-            <div className="text-sm text-muted-foreground">
-              {filteredRooms.length} {filteredRooms.length === 1 ? 'room' : 'rooms'} found
-            </div>
-            <Button variant="ghost" size="sm" onClick={clearFilters}>
-              Clear All Filters
-            </Button>
-          </div>
-        )}
-      </Card>
-      
-      <Card>
-        <Table>
-          <TableCaption>Cleaning status of all rooms across properties.</TableCaption>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Room</TableHead>
-              <TableHead>Property</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Last Cleaned</TableHead>
-              <TableHead>Next Check-in</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredRooms.length > 0 ? (
-              filteredRooms.map((room) => (
-                <TableRow key={room.id}>
-                  <TableCell className="font-medium">{room.roomNumber}</TableCell>
-                  <TableCell>{room.property}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(room.status)}
-                      {getStatusBadge(room.status)}
+        <TabsContent value={activeTab} className="mt-0">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle>Room Cleaning Status</CardTitle>
+              <CardDescription>
+                View and update cleaning status for rooms
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex justify-center items-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <span className="ml-2 text-lg">Loading cleaning status data...</span>
+                </div>
+              ) : isError ? (
+                <div className="p-8 text-center">
+                  <p className="text-red-500">Error loading cleaning status data</p>
+                  <p className="text-muted-foreground mt-2">{error instanceof Error ? error.message : 'Unknown error'}</p>
+                  <Button 
+                    variant="outline" 
+                    className="mt-4"
+                    onClick={() => window.location.reload()}
+                  >
+                    Retry
+                  </Button>
+                </div>
+              ) : filteredRooms.length === 0 ? (
+                <div className="p-8 text-center">
+                  <p className="text-muted-foreground">No rooms match your filter criteria</p>
+                  <Button 
+                    variant="outline" 
+                    className="mt-4"
+                    onClick={() => {
+                      setProperty("all");
+                      setStatus("all");
+                      setSearchQuery("");
+                      setActiveTab("all");
+                    }}
+                  >
+                    Clear All Filters
+                  </Button>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {filteredRooms.map(room => (
+                    <div key={room.id} className="py-4 px-1 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-start gap-4">
+                          <div className="flex-1">
+                            <Link to={`/rooms/view/${room.id}`} className="text-lg font-medium hover:text-primary">
+                              Room {room.roomNumber}
+                            </Link>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-sm text-muted-foreground">{room.property}</span>
+                              {getStatusBadge(room.cleaningStatus)}
+                              {room.hasCheckout && (
+                                <Badge variant="outline" className="bg-purple-50 text-purple-700">Today's Checkout</Badge>
+                              )}
+                              {room.hasCheckin && (
+                                <Badge variant="outline" className="bg-blue-50 text-blue-700">Today's Checkin</Badge>
+                              )}
+                            </div>
+                            {room.notes && (
+                              <p className="text-sm text-muted-foreground mt-2">
+                                <span className="font-medium">Notes:</span> {room.notes}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 self-end md:self-center">
+                        {getStatusActionButton(room)}
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => {
+                            const notes = prompt("Enter notes for this room:", room.notes || "");
+                            if (notes !== null) {
+                              updateRoomStatus({ 
+                                roomId: room.id, 
+                                status: room.cleaningStatus,
+                                notes 
+                              });
+                            }
+                          }}
+                        >
+                          Add Notes
+                        </Button>
+                      </div>
                     </div>
-                  </TableCell>
-                  <TableCell>{room.lastCleaned || 'Not yet cleaned'}</TableCell>
-                  <TableCell>{room.nextCheckIn || 'No upcoming check-in'}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      {room.status !== 'Clean' && (
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="text-green-600" 
-                          onClick={() => updateStatus(room.id, 'Clean')}
-                        >
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          Mark Clean
-                        </Button>
-                      )}
-                      {room.status !== 'In Progress' && (
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="text-yellow-600" 
-                          onClick={() => updateStatus(room.id, 'In Progress')}
-                        >
-                          <RotateCw className="h-4 w-4 mr-1" />
-                          Start Cleaning
-                        </Button>
-                      )}
-                      {room.status !== 'Dirty' && (
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="text-red-600" 
-                          onClick={() => updateStatus(room.id, 'Dirty')}
-                        >
-                          <XCircle className="h-4 w-4 mr-1" />
-                          Mark Dirty
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  No rooms found matching your filters
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

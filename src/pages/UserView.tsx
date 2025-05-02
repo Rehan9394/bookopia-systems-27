@@ -1,10 +1,9 @@
-
 import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, FileEdit, Clock } from 'lucide-react';
-import { useUser } from '@/hooks/useUsers';
+import { ArrowLeft, FileEdit, Clock, Trash2, Loader } from 'lucide-react';
+import { useUser, useDeleteUser } from '@/hooks/useUsers';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -16,29 +15,77 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
 
 const UserView = () => {
   const { id } = useParams();
-  const { data: user, isLoading, error } = useUser(id || '');
+  const userId = id || '';
+  const { data: user, isLoading, error } = useUser(userId);
   const { data: auditLogs } = useAuditLogs();
+  const deleteUserMutation = useDeleteUser();
+  const { toast } = useToast();
+  const navigate = useNavigate();
   
   // Filter audit logs for this specific user
-  const userLogs = auditLogs?.filter(log => log.user === id).slice(0, 5) || [];
+  const userLogs = auditLogs?.filter(log => log.user === userId).slice(0, 5) || [];
+
+  const handleDeleteUser = () => {
+    deleteUserMutation.mutate(userId, {
+      onSuccess: () => {
+        toast({
+          title: "User Deleted",
+          description: "User has been deleted successfully.",
+        });
+        navigate('/users');
+      },
+      onError: (error) => {
+        toast({
+          title: "Error",
+          description: "Failed to delete user. Please try again.",
+          variant: "destructive"
+        });
+        console.error("Error deleting user:", error);
+      }
+    });
+  };
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading user information...</span>
+      </div>
+    );
   }
 
   if (error || !user) {
-    return <div>Error loading user details</div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-64">
+        <p className="text-red-500">Error loading user</p>
+        <Button 
+          variant="outline" 
+          className="mt-4"
+          onClick={() => navigate('/users')}
+        >
+          Return to Users List
+        </Button>
+      </div>
+    );
   }
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(part => part[0])
-      .join('')
-      .toUpperCase();
+  const getInitials = (firstName: string, lastName: string) => {
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
   return (
@@ -56,12 +103,48 @@ const UserView = () => {
             <p className="text-muted-foreground mt-1">View user information</p>
           </div>
         </div>
-        <Button asChild>
-          <Link to={`/users/edit/${user.id}`}>
-            <FileEdit className="h-4 w-4 mr-2" />
-            Edit User
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link to={`/users/edit/${user.id}`}>
+              <FileEdit className="h-4 w-4 mr-2" />
+              Edit User
+            </Link>
+          </Button>
+          
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete User
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the user
+                  account and remove their data from our servers.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeleteUser}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {deleteUserMutation.isPending ? (
+                    <>
+                      <Loader className="mr-2 h-4 w-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    'Delete User'
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -72,12 +155,13 @@ const UserView = () => {
           <CardContent className="space-y-6">
             <div className="flex items-center gap-4">
               <Avatar className="h-20 w-20">
-                <AvatarImage src={user.avatar || undefined} />
-                <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                <AvatarImage src={user.avatar_url || undefined} />
+                <AvatarFallback>{getInitials(user.first_name, user.last_name)}</AvatarFallback>
               </Avatar>
               <div>
-                <h2 className="text-2xl font-semibold">{user.name}</h2>
+                <h2 className="text-2xl font-semibold">{`${user.first_name} ${user.last_name}`}</h2>
                 <p className="text-muted-foreground">{user.email}</p>
+                {user.phone && <p className="text-muted-foreground">{user.phone}</p>}
               </div>
             </div>
             
@@ -89,10 +173,10 @@ const UserView = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Status</p>
                 <Badge 
-                  variant="secondary"
+                  variant={user.status ? "secondary" : "outline"}
                   className="mt-1"
                 >
-                  Active
+                  {user.status ? 'Active' : 'Inactive'}
                 </Badge>
               </div>
             </div>
@@ -106,16 +190,20 @@ const UserView = () => {
           <CardContent className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground">Last Login</p>
-              <p className="font-medium">{user.lastActive || 'Never'}</p>
+              <p className="font-medium">{user.last_sign_in_at 
+                ? new Date(user.last_sign_in_at).toLocaleString() 
+                : 'Never'}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Created At</p>
-              <p className="font-medium">{new Date().toISOString().split('T')[0]}</p>
+              <p className="font-medium">{user.created_at 
+                ? new Date(user.created_at).toLocaleDateString() 
+                : 'Unknown'}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Two-Factor Auth</p>
+              <p className="text-sm text-muted-foreground">Auth Provider</p>
               <Badge variant="secondary">
-                Disabled
+                {user.provider || 'Email'}
               </Badge>
             </div>
           </CardContent>

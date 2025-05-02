@@ -9,25 +9,33 @@ import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { useCreateUser } from '@/hooks/useUsers';
+import { Loader } from 'lucide-react';
 
 type UserFormData = {
-  name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   role: string;
   password: string;
   confirmPassword: string;
+  phone: string;
   sendInvite: boolean;
 };
 
 const UserAdd = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const createUserMutation = useCreateUser();
+  
   const [formData, setFormData] = useState<UserFormData>({
-    name: '',
+    first_name: '',
+    last_name: '',
     email: '',
     role: '',
     password: '',
     confirmPassword: '',
+    phone: '',
     sendInvite: true,
   });
 
@@ -53,13 +61,9 @@ const UserAdd = () => {
     });
   };
 
-  const getInitials = (name: string) => {
-    if (!name) return '';
-    return name
-      .split(' ')
-      .map(part => part[0])
-      .join('')
-      .toUpperCase();
+  const getInitials = (firstName: string, lastName: string) => {
+    if (!firstName && !lastName) return '';
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -75,15 +79,28 @@ const UserAdd = () => {
       return;
     }
     
-    // In a real app, this would send the data to an API
-    console.log('Submitting user:', formData);
-    
-    toast({
-      title: "User Added",
-      description: `${formData.name} has been added successfully.${formData.sendInvite ? ' An invitation email has been sent.' : ''}`,
+    // Create user in database
+    createUserMutation.mutate({
+      first_name: formData.first_name,
+      last_name: formData.last_name,
+      email: formData.email,
+      password: formData.password,
+      role: formData.role.toLowerCase(),
+      phone: formData.phone || null,
+      status: true,
+    }, {
+      onSuccess: () => {
+        // If successful, send invitation email (if enabled) in a real app
+        if (formData.sendInvite) {
+          toast({
+            description: `An invitation email has been sent to ${formData.email}.`
+          });
+        }
+        
+        // Navigate to users list
+        navigate('/users');
+      }
     });
-    
-    navigate('/users');
   };
 
   return (
@@ -101,16 +118,29 @@ const UserAdd = () => {
               <CardDescription>Enter the user's basic information</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name*</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="Enter user's full name"
-                  required
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="first_name">First Name*</Label>
+                  <Input
+                    id="first_name"
+                    name="first_name"
+                    value={formData.first_name}
+                    onChange={handleInputChange}
+                    placeholder="Enter first name"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="last_name">Last Name*</Label>
+                  <Input
+                    id="last_name"
+                    name="last_name"
+                    value={formData.last_name}
+                    onChange={handleInputChange}
+                    placeholder="Enter last name"
+                    required
+                  />
+                </div>
               </div>
               
               <div className="space-y-2">
@@ -127,17 +157,26 @@ const UserAdd = () => {
               </div>
               
               <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  placeholder="Enter phone number (optional)"
+                />
+              </div>
+              
+              <div className="space-y-2">
                 <Label htmlFor="role">Role*</Label>
                 <Select onValueChange={handleRoleChange} required>
                   <SelectTrigger id="role">
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Admin">Admin</SelectItem>
-                    <SelectItem value="Booking Agent">Booking Agent</SelectItem>
-                    <SelectItem value="Owner">Owner</SelectItem>
-                    <SelectItem value="Cleaning Staff">Cleaning Staff</SelectItem>
-                    <SelectItem value="Maintenance">Maintenance</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="agent">Agent</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -182,13 +221,17 @@ const UserAdd = () => {
             <CardContent className="space-y-6">
               <div className="flex flex-col items-center justify-center py-4">
                 <Avatar className="w-20 h-20 mb-4">
-                  <AvatarFallback className="text-xl">{getInitials(formData.name)}</AvatarFallback>
+                  <AvatarFallback className="text-xl">{getInitials(formData.first_name, formData.last_name)}</AvatarFallback>
                 </Avatar>
-                <h3 className="font-medium text-lg">{formData.name || 'New User'}</h3>
+                <h3 className="font-medium text-lg">
+                  {formData.first_name || formData.last_name 
+                    ? `${formData.first_name} ${formData.last_name}` 
+                    : 'New User'}
+                </h3>
                 <p className="text-muted-foreground">{formData.email || 'email@example.com'}</p>
                 {formData.role && (
                   <Badge className="mt-2" variant="outline">
-                    {formData.role}
+                    {formData.role === 'admin' ? 'Admin' : 'Agent'}
                   </Badge>
                 )}
               </div>
@@ -211,20 +254,11 @@ const UserAdd = () => {
                 <div className="p-4 bg-blue-50 rounded-md">
                   <h4 className="font-medium text-blue-800 mb-2">Role Information</h4>
                   <div className="text-sm text-blue-700">
-                    {formData.role === 'Admin' && (
+                    {formData.role === 'admin' && (
                       <p>Admins have full access to all features and can manage other users.</p>
                     )}
-                    {formData.role === 'Booking Agent' && (
-                      <p>Booking Agents can create and manage bookings, but cannot access financial information.</p>
-                    )}
-                    {formData.role === 'Owner' && (
-                      <p>Owners can view their properties and bookings, but cannot make changes to the system.</p>
-                    )}
-                    {formData.role === 'Cleaning Staff' && (
-                      <p>Cleaning Staff can update room cleaning status but have limited access to other features.</p>
-                    )}
-                    {formData.role === 'Maintenance' && (
-                      <p>Maintenance staff can manage maintenance requests and update their status.</p>
+                    {formData.role === 'agent' && (
+                      <p>Agents can create and manage bookings, but cannot access system settings or manage users.</p>
                     )}
                     {!formData.role && (
                       <p>Select a role to see information about its permissions.</p>
@@ -236,11 +270,26 @@ const UserAdd = () => {
           </Card>
           
           <div className="lg:col-span-3 flex justify-end gap-4">
-            <Button type="button" variant="outline" onClick={() => navigate('/users')}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => navigate('/users')}
+              disabled={createUserMutation.isPending}
+            >
               Cancel
             </Button>
-            <Button type="submit">
-              Add User
+            <Button 
+              type="submit"
+              disabled={createUserMutation.isPending}
+            >
+              {createUserMutation.isPending ? (
+                <>
+                  <Loader className="mr-2 h-4 w-4 animate-spin" />
+                  Creating User...
+                </>
+              ) : (
+                'Add User'
+              )}
             </Button>
           </div>
         </div>

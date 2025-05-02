@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -8,16 +8,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CalendarIcon, PlusCircle } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { useRooms } from '@/hooks/useRooms';
+import { useRooms, useAvailableRooms } from '@/hooks/useRooms';
 import { SearchAndFilter } from '@/components/ui/SearchAndFilter';
-import { Checkbox } from "@/components/ui/checkbox"
+import { Checkbox } from "@/components/ui/checkbox";
+import { useCreateOwner, useAssignRoomToOwner } from '@/hooks/useOwners';
+import { Owner } from '@/services/supabase-types';
 
 type OwnerFormData = {
   firstName: string;
@@ -44,11 +46,14 @@ type OwnerFormData = {
   notes: string;
   birthdate?: Date;
   citizenship: string;
+  password: string;
 };
 
 const OwnerAdd = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const createOwnerMutation = useCreateOwner();
+  const assignRoomMutation = useAssignRoomToOwner();
   const [formData, setFormData] = useState<OwnerFormData>({
     firstName: '',
     lastName: '',
@@ -73,30 +78,43 @@ const OwnerAdd = () => {
     },
     notes: '',
     citizenship: '',
+    password: '',
   });
 
   const [searchQuery, setSearchQuery] = useState('');
   const { data: rooms, isLoading } = useRooms();
+  const { data: availableRooms, isLoading: isLoadingAvailable } = useAvailableRooms();
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
-  
-  const filteredRooms = rooms?.filter(room => 
-    room.number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    room.property.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const [isAssigningRooms, setIsAssigningRooms] = useState(false);
+
+  // Filter available rooms based on search query
+  const filteredRooms = availableRooms?.filter(room => {
+    if (!room || typeof room !== 'object') return false;
+    
+    const roomNumber = room.number?.toLowerCase() || '';
+    const propertyName = room.property?.toLowerCase() || '';
+    const query = searchQuery.toLowerCase();
+    
+    return roomNumber.includes(query) || propertyName.includes(query);
+  }) || [];
 
   const handleRoomSelect = (roomId: string) => {
-    setSelectedRooms(prev => {
-      if (prev.includes(roomId)) {
-        return prev.filter(id => id !== roomId);
+    if (!roomId) return;
+    
+    setSelectedRooms(prevSelected => {
+      const isCurrentlySelected = prevSelected.includes(roomId);
+      
+      if (isCurrentlySelected) {
+        return prevSelected.filter(id => id !== roomId);
+      } else {
+        return [...prevSelected, roomId];
       }
-      return [...prev, roomId];
     });
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
-    // Handle nested objects
     if (name.includes('.')) {
       const [parentKey, childKey] = name.split('.');
       if (parentKey === 'accountingInfo') {
@@ -125,7 +143,6 @@ const OwnerAdd = () => {
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    // Handle nested objects
     if (name.includes('.')) {
       const [parentKey, childKey] = name.split('.');
       if (parentKey === 'accountingInfo') {
@@ -169,18 +186,131 @@ const OwnerAdd = () => {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // In a real app, this would send the data to an API
-    console.log('Submitting owner:', formData);
+    // Use password from form state
+    const password = formData.password;
     
-    toast({
-      title: "Owner Added",
-      description: `${formData.firstName} ${formData.lastName} has been added successfully.`,
-    });
+    // Validate password match
+    const confirmPasswordInput = document.getElementById('confirm-password') as HTMLInputElement;
+    const confirmPassword = confirmPasswordInput?.value || "";
     
-    navigate('/owners');
+    if (password !== confirmPassword) {
+      toast({
+        title: "Password mismatch",
+        description: "The passwords you entered don't match. Please try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const ownerData: Partial<Owner> = {
+      first_name: formData.firstName,
+      last_name: formData.lastName,
+      email: formData.email,
+      password: password,
+      phone: formData.phone,
+      address: formData.address,
+      city: formData.city,
+      state: formData.state,
+      zip_code: formData.zipCode,
+      country: formData.country,
+      notes: formData.notes,
+      birth_date: formData.birthdate ? formData.birthdate.toISOString() : null,
+      citizenship: formData.citizenship
+      // Don't include financial_info here - it's not handled correctly by the API
+    };
+    
+    // Log data to help with debugging
+    console.log('Sending owner data:', ownerData);
+    
+    try {
+      setIsAssigningRooms(false);
+      
+      // Check required fields explicitly before sending to API
+      if (!ownerData.first_name || !ownerData.first_name.trim()) {
+        throw new Error('First name is required');
+      }
+      if (!ownerData.last_name || !ownerData.last_name.trim()) {
+        throw new Error('Last name is required');
+      }
+      if (!ownerData.email || !ownerData.email.trim()) {
+        throw new Error('Email is required');
+      }
+      if (!ownerData.password || !ownerData.password.trim()) {
+        throw new Error('Password is required');
+      }
+      
+      // Create the owner
+      const newOwner = await createOwnerMutation.mutateAsync(ownerData);
+      
+      // If we have selected rooms and the owner was created successfully
+      if (selectedRooms.length > 0 && newOwner?.id) {
+        setIsAssigningRooms(true);
+        try {
+          // Create room assignments for each selected room
+          const assignmentPromises = selectedRooms.map(roomId => {
+            return assignRoomMutation.mutateAsync({
+              owner_id: newOwner.id,
+              room_id: roomId,
+              commission_rate: 10, // Default commission rate
+            });
+          });
+          
+          await Promise.all(assignmentPromises);
+        } catch (assignError) {
+          console.error('Error assigning rooms:', assignError);
+          // Don't throw here, we still created the owner successfully
+          toast({
+            title: "Owner created, but room assignment failed",
+            description: "The owner was created but there was an issue assigning rooms. You can assign rooms later from the owner details page.",
+            variant: "warning"
+          });
+        } finally {
+          setIsAssigningRooms(false);
+        }
+      }
+      
+      // Now handle financial info separately if needed
+      if (newOwner?.id && (
+          formData.accountingInfo.paymentMethod || 
+          formData.accountingInfo.bankName || 
+          formData.accountingInfo.accountNumber || 
+          formData.taxInfo.taxId
+      )) {
+        try {
+          // This would call a separate API function to save financial info
+          // For now, let's log it
+          console.log('Would save financial info for owner ID:', newOwner.id, {
+            payment_method: formData.accountingInfo.paymentMethod,
+            bank_name: formData.accountingInfo.bankName,
+            account_number: formData.accountingInfo.accountNumber,
+            iban: formData.accountingInfo.iban,
+            swift: formData.accountingInfo.swift,
+            tax_id: formData.taxInfo.taxId,
+            tax_residence: formData.taxInfo.taxResidence
+          });
+        } catch (financialError) {
+          console.error('Error saving financial info:', financialError);
+          // Don't throw here, we still created the owner successfully
+        }
+      }
+      
+      toast({
+        title: "Owner created successfully",
+        description: `${formData.firstName} ${formData.lastName} has been added${selectedRooms.length > 0 ? ' with ' + selectedRooms.length + ' room assignments' : ''}.`,
+      });
+      
+      navigate('/owners');
+    } catch (error) {
+      console.error('Error creating owner:', error);
+      toast({
+        title: "Error creating owner",
+        description: error instanceof Error ? error.message : "There was a problem creating the owner. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -385,6 +515,8 @@ const OwnerAdd = () => {
                       id="password"
                       name="password"
                       type="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
                       placeholder="Enter a secure password"
                       required
                     />
@@ -611,7 +743,7 @@ const OwnerAdd = () => {
                     onClearFilters={() => setSearchQuery('')}
                   />
                   
-                  {isLoading ? (
+                  {isLoadingAvailable ? (
                     <div className="text-center py-12">
                       <p className="text-muted-foreground">Loading rooms...</p>
                     </div>
@@ -626,7 +758,6 @@ const OwnerAdd = () => {
                               ? "border-primary bg-primary/5" 
                               : "hover:bg-accent"
                           )}
-                          onClick={() => handleRoomSelect(room.id)}
                         >
                           <div>
                             <h4 className="font-medium">Room {room.number}</h4>
@@ -634,7 +765,13 @@ const OwnerAdd = () => {
                           </div>
                           <Checkbox
                             checked={selectedRooms.includes(room.id)}
-                            onCheckedChange={() => handleRoomSelect(room.id)}
+                            onCheckedChange={(checked) => {
+                              const isSelected = selectedRooms.includes(room.id);
+                              if ((checked && !isSelected) || (!checked && isSelected)) {
+                                handleRoomSelect(room.id);
+                              }
+                            }}
+                            onClick={(e) => e.stopPropagation()}
                           />
                         </div>
                       ))}
@@ -655,8 +792,15 @@ const OwnerAdd = () => {
             <Button type="button" variant="outline" onClick={() => navigate('/owners')}>
               Cancel
             </Button>
-            <Button type="submit">
-              Add Owner
+            <Button type="submit" disabled={createOwnerMutation.isPending}>
+              {createOwnerMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Add Owner"
+              )}
             </Button>
           </div>
         </Tabs>

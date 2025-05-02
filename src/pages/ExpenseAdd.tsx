@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,28 +12,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { CalendarIcon } from 'lucide-react';
+import { toast } from "sonner";
+import { CalendarIcon, Loader } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useProperties } from '@/hooks/useProperties';
+import { useOwners } from '@/hooks/useOwners';
+import { useExpenses } from '@/hooks/useExpenses';
+import { useAuth } from '@/hooks/use-auth';
+import { useRooms } from '@/hooks/useRooms';
 
 const ExpenseAdd = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { user } = useAuth();
+  const { data: properties, isLoading: loadingProperties } = useProperties();
+  const { data: owners, isLoading: loadingOwners } = useOwners();
+  const { createExpense } = useExpenses();
+  
   const [date, setDate] = useState<Date>(new Date());
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedProperty, setSelectedProperty] = useState<string>('');
+  const { data: rooms, isLoading: loadingRooms } = useRooms();
   
   const [formData, setFormData] = useState({
     description: '',
     amount: '',
     category: '',
-    property: '',
+    property_id: '',
+    room_id: '',
     vendor: '',
-    paymentMethod: '',
+    payment_method: '',
     notes: '',
-    owner: '',
+    owner_id: '',
   });
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -42,36 +54,82 @@ const ExpenseAdd = () => {
   };
   
   const handleSelectChange = (name: string) => (value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'property_id') {
+      setSelectedProperty(value);
+      // Reset room when property changes
+      setFormData(prev => ({ ...prev, [name]: value, room_id: '' }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
+  
+  // Filter rooms by selected property
+  const filteredRooms = rooms?.filter(room => 
+    selectedProperty ? room.property_id === selectedProperty : true
+  );
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Basic validation
-    if (!formData.description || !formData.amount || !formData.category || !formData.property) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
+    if (!formData.description || !formData.amount || !formData.category) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+    
+    // Validate amount is a positive number
+    const amount = parseFloat(formData.amount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error("Amount must be a positive number");
       return;
     }
     
     setIsSubmitting(true);
     
-    // In a real app, this would send data to the database
-    // For now, we'll just simulate a successful submission
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    toast({
-      title: "Expense Added",
-      description: `${formData.description} has been successfully added.`,
-    });
-    
-    // Navigate back to expenses list
-    navigate('/expenses');
+    try {
+      // Prepare expense data for the API
+      const expenseData = {
+        description: formData.description,
+        amount: amount,
+        date: format(date, 'yyyy-MM-dd'),
+        category: formData.category,
+        property_id: formData.property_id || null,
+        room_id: formData.room_id || null,
+        vendor: formData.vendor || null,
+        payment_method: formData.payment_method || null,
+        notes: formData.notes || null,
+        owner_id: formData.owner_id || null,
+        created_by: user?.id
+      };
+      
+      // Create the expense using the API
+      const result = await createExpense(expenseData);
+      
+      if (result.success) {
+        toast.success("Expense added successfully");
+        // Navigate back to expenses list
+        navigate('/expenses');
+      } else {
+        toast.error(result.message || "Failed to add expense");
+      }
+    } catch (error) {
+      console.error("Error adding expense:", error);
+      toast.error("An error occurred while adding the expense");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+  
+  const loading = loadingProperties || loadingOwners || loadingRooms;
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-80">
+        <Loader className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading...</span>
+      </div>
+    );
+  }
   
   return (
     <div className="animate-fade-in">
@@ -169,19 +227,60 @@ const ExpenseAdd = () => {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="property">Property*</Label>
+                  <Label htmlFor="property_id">Property</Label>
                   <Select
-                    value={formData.property}
-                    onValueChange={handleSelectChange('property')}
-                    required
+                    value={formData.property_id}
+                    onValueChange={handleSelectChange('property_id')}
                   >
-                    <SelectTrigger id="property">
+                    <SelectTrigger id="property_id">
                       <SelectValue placeholder="Select a property" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Marina Tower">Marina Tower</SelectItem>
-                      <SelectItem value="Downtown Heights">Downtown Heights</SelectItem>
-                      <SelectItem value="All Properties">All Properties</SelectItem>
+                      {properties && properties.map(property => (
+                        <SelectItem key={property.id} value={property.id}>
+                          {property.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="room_id">Room</Label>
+                  <Select
+                    value={formData.room_id}
+                    onValueChange={handleSelectChange('room_id')}
+                    disabled={!formData.property_id}
+                  >
+                    <SelectTrigger id="room_id">
+                      <SelectValue placeholder={formData.property_id ? "Select a room" : "Select a property first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredRooms && filteredRooms.map(room => (
+                        <SelectItem key={room.id} value={room.id}>
+                          Room {room.number}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="owner_id">Owner</Label>
+                  <Select
+                    value={formData.owner_id}
+                    onValueChange={handleSelectChange('owner_id')}
+                  >
+                    <SelectTrigger id="owner_id">
+                      <SelectValue placeholder="Select an owner" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {owners && owners.map(owner => (
+                        <SelectItem key={owner.id} value={owner.id}>
+                          {owner.first_name} {owner.last_name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -199,12 +298,12 @@ const ExpenseAdd = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="paymentMethod">Payment Method</Label>
+                  <Label htmlFor="payment_method">Payment Method</Label>
                   <Select
-                    value={formData.paymentMethod}
-                    onValueChange={handleSelectChange('paymentMethod')}
+                    value={formData.payment_method}
+                    onValueChange={handleSelectChange('payment_method')}
                   >
-                    <SelectTrigger id="paymentMethod">
+                    <SelectTrigger id="payment_method">
                       <SelectValue placeholder="Select payment method" />
                     </SelectTrigger>
                     <SelectContent>
@@ -214,26 +313,6 @@ const ExpenseAdd = () => {
                       <SelectItem value="Check">Check</SelectItem>
                       <SelectItem value="Auto-Payment">Auto-Payment</SelectItem>
                       <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="owner">Owner*</Label>
-                  <Select
-                    value={formData.owner}
-                    onValueChange={handleSelectChange('owner')}
-                    required
-                  >
-                    <SelectTrigger id="owner">
-                      <SelectValue placeholder="Select an owner" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Owner1">Owner 1</SelectItem>
-                      <SelectItem value="Owner2">Owner 2</SelectItem>
-                      <SelectItem value="Owner3">Owner 3</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

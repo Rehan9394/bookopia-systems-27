@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -22,89 +21,239 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, Save, Trash } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { AlertCircle, ArrowLeft, Loader, Save, Trash } from 'lucide-react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useRoom } from '@/hooks/useRooms';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { fetchProperties, fetchRoomTypes, createRoom, updateRoom } from '@/services/api';
+import { useAuth } from '@/hooks/use-auth';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Form schema
 const roomFormSchema = z.object({
-  roomNumber: z.string().min(1, "Room number is required"),
-  property: z.string().min(1, "Property is required"),
-  type: z.string().min(1, "Room type is required"),
-  maxOccupancy: z.string().min(1, "Max occupancy is required"),
-  basePrice: z.string().min(1, "Base price is required"),
+  number: z.string().min(1, "Room number is required"),
+  property_id: z.string().min(1, "Property is required"),
+  room_type_id: z.string().min(1, "Room type is required"),
+  max_adults: z.coerce.number().min(1, "Maximum adults is required"),
+  max_children: z.coerce.number().default(0),
+  base_rate: z.coerce.number().min(1, "Base rate is required"),
   description: z.string().optional(),
   amenities: z.string().optional(),
   status: z.string().min(1, "Status is required"),
-  owner: z.string().optional(),
-  isActive: z.boolean().default(true),
+  floor: z.string().optional(),
+  active: z.boolean().default(true),
 });
 
 type RoomFormValues = z.infer<typeof roomFormSchema>;
 
 interface AddEditRoomFormProps {
   mode: 'add' | 'edit';
-  roomData?: RoomFormValues;
+  roomId?: string;
 }
 
-export function AddEditRoomForm({ mode, roomData }: AddEditRoomFormProps) {
+export function AddEditRoomForm({ mode, roomId }: AddEditRoomFormProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const [properties, setProperties] = useState<any[]>([]);
+  const [roomTypes, setRoomTypes] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
+  
+  // If editing, fetch the room data
+  const { data: roomData, isLoading: roomLoading, error: roomError, deleteRoom } = useRoom(roomId || '');
   
   // Setup form with default values
   const form = useForm<RoomFormValues>({
     resolver: zodResolver(roomFormSchema),
-    defaultValues: roomData || {
-      roomNumber: '',
-      property: '',
-      type: '',
-      maxOccupancy: '',
-      basePrice: '',
+    defaultValues: {
+      number: '',
+      property_id: '',
+      room_type_id: '',
+      max_adults: 2,
+      max_children: 0,
+      base_rate: 0,
       description: '',
       amenities: '',
       status: 'available',
-      owner: '',
-      isActive: true,
+      floor: '',
+      active: true,
     },
   });
 
-  function onSubmit(data: RoomFormValues) {
-    // In a real application, this would send the data to a server
-    console.log('Room form submitted:', data);
+  // Fetch properties and room types on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [propertiesData, roomTypesData] = await Promise.all([
+          fetchProperties(),
+          fetchRoomTypes()
+        ]);
+        
+        setProperties(propertiesData);
+        setRoomTypes(roomTypesData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setApiError('Failed to load properties and room types.');
+      }
+    };
     
-    toast({
-      title: `Room ${mode === 'add' ? 'created' : 'updated'} successfully`,
-      description: `Room ${data.roomNumber} has been ${mode === 'add' ? 'added to' : 'updated in'} the system.`,
-    });
+    fetchData();
+  }, []);
+
+  // Populate form with room data when editing
+  useEffect(() => {
+    if (mode === 'edit' && roomData && !roomLoading) {
+      // Format amenities as a string if it's an object
+      let amenitiesString = '';
+      if (roomData.amenities) {
+        if (typeof roomData.amenities === 'object') {
+          amenitiesString = Object.keys(roomData.amenities)
+            .filter(key => roomData.amenities[key])
+            .join('\n');
+        } else if (Array.isArray(roomData.amenities)) {
+          amenitiesString = roomData.amenities.join('\n');
+        }
+      }
+      
+      form.reset({
+        number: roomData.number || '',
+        property_id: roomData.property_id || '',
+        room_type_id: roomData.room_type_id || '',
+        max_adults: roomData.max_adults || 2,
+        max_children: roomData.max_children || 0,
+        base_rate: roomData.base_rate || 0,
+        description: roomData.description || '',
+        amenities: amenitiesString,
+        status: roomData.status || 'available',
+        floor: roomData.floor || '',
+        active: roomData.active !== false, // Default to true unless explicitly false
+      });
+    }
+  }, [mode, roomData, roomLoading, form]);
+
+  // Handle form submission
+  async function onSubmit(data: RoomFormValues) {
+    setIsLoading(true);
+    setApiError(null);
     
-    // Redirect to the rooms list page
-    navigate('/rooms');
+    try {
+      // Process amenities into an object format
+      let amenitiesObj = {};
+      if (data.amenities) {
+        const amenitiesArray = data.amenities.split('\n').filter(Boolean);
+        amenitiesObj = amenitiesArray.reduce((acc: any, amenity) => {
+          acc[amenity.trim()] = true;
+          return acc;
+        }, {});
+      }
+      
+      const roomPayload = {
+        ...data,
+        amenities: amenitiesObj
+      };
+      
+      if (mode === 'add') {
+        await createRoom(roomPayload);
+        toast({
+          title: 'Room created successfully',
+          description: `Room ${data.number} has been added to the system.`,
+        });
+      } else if (mode === 'edit' && roomId) {
+        await updateRoom(roomId, roomPayload);
+        toast({
+          title: 'Room updated successfully',
+          description: `Room ${data.number} has been updated in the system.`,
+        });
+      }
+      
+      // Redirect to the rooms list page
+      navigate('/rooms');
+    } catch (error: any) {
+      console.error('Error saving room:', error);
+      setApiError(error.message || 'Failed to save room. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   function handleCancel() {
     // If we have roomData, we go back to the room detail view, otherwise to the rooms list
-    if (mode === 'edit' && roomData) {
-      navigate(`/rooms/view/${roomData.roomNumber}`);
+    if (mode === 'edit' && roomId) {
+      navigate(`/rooms/view/${roomId}`);
     } else {
       navigate('/rooms');
     }
   }
 
-  function handleDelete() {
-    if (mode === 'edit' && roomData) {
-      // In a real application, this would send a delete request to a server
-      console.log('Deleting room:', roomData.roomNumber);
-      
+  // Handle delete confirmation
+  function handleDeleteClick() {
+    setShowDeleteDialog(true);
+  }
+
+  async function confirmDelete() {
+    try {
+      const result = await deleteRoom();
+      if (result.success) {
+        toast({
+          title: 'Room deleted',
+          description: result.message,
+        });
+        navigate('/rooms');
+      } else {
+        toast({
+          title: 'Error',
+          description: result.message,
+          variant: 'destructive'
+        });
+      }
+    } catch (error: any) {
+      console.error('Error deleting room:', error);
       toast({
-        title: 'Room deleted',
-        description: `Room ${roomData.roomNumber} has been removed from the system.`,
+        title: 'Error',
+        description: 'Failed to delete room. Please try again.',
+        variant: 'destructive'
       });
-      
-      navigate('/rooms');
     }
+    setShowDeleteDialog(false);
+  }
+
+  // Show loading state if fetching room data or properties/room types
+  if (mode === 'edit' && roomLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading room data...</span>
+      </div>
+    );
+  }
+
+  // Show error if room not found
+  if (mode === 'edit' && roomError) {
+    return (
+      <Alert variant="destructive" className="mb-6">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>
+          Failed to load room data. The room may have been deleted or you don't have permission to view it.
+        </AlertDescription>
+      </Alert>
+    );
   }
 
   return (
@@ -119,17 +268,25 @@ export function AddEditRoomForm({ mode, roomData }: AddEditRoomFormProps) {
           <div>
             <h1 className="text-3xl font-bold">{mode === 'add' ? 'Add New Room' : 'Edit Room'}</h1>
             <p className="text-muted-foreground mt-1">
-              {mode === 'add' ? 'Create a new room in the system' : `Modifying room ${roomData?.roomNumber}`}
+              {mode === 'add' ? 'Create a new room in the system' : `Modifying room ${roomData?.number}`}
             </p>
           </div>
         </div>
-        {mode === 'edit' && (
-          <Button variant="destructive" className="flex items-center gap-2" onClick={handleDelete}>
+        {mode === 'edit' && isAdmin && (
+          <Button variant="destructive" className="flex items-center gap-2" onClick={handleDeleteClick}>
             <Trash className="h-4 w-4" />
             Delete Room
           </Button>
         )}
       </div>
+
+      {apiError && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{apiError}</AlertDescription>
+        </Alert>
+      )}
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -142,7 +299,7 @@ export function AddEditRoomForm({ mode, roomData }: AddEditRoomFormProps) {
               <CardContent className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="roomNumber"
+                  name="number"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Room Number</FormLabel>
@@ -156,13 +313,14 @@ export function AddEditRoomForm({ mode, roomData }: AddEditRoomFormProps) {
 
                 <FormField
                   control={form.control}
-                  name="property"
+                  name="property_id"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Property</FormLabel>
                       <Select 
                         onValueChange={field.onChange} 
                         defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -170,8 +328,11 @@ export function AddEditRoomForm({ mode, roomData }: AddEditRoomFormProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="Marina Tower">Marina Tower</SelectItem>
-                          <SelectItem value="Downtown Heights">Downtown Heights</SelectItem>
+                          {properties.map(property => (
+                            <SelectItem key={property.id} value={property.id}>
+                              {property.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -181,13 +342,14 @@ export function AddEditRoomForm({ mode, roomData }: AddEditRoomFormProps) {
 
                 <FormField
                   control={form.control}
-                  name="type"
+                  name="room_type_id"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Room Type</FormLabel>
                       <Select 
                         onValueChange={field.onChange} 
                         defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -195,10 +357,11 @@ export function AddEditRoomForm({ mode, roomData }: AddEditRoomFormProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="Standard">Standard</SelectItem>
-                          <SelectItem value="Deluxe">Deluxe</SelectItem>
-                          <SelectItem value="Suite">Suite</SelectItem>
-                          <SelectItem value="Executive">Executive</SelectItem>
+                          {roomTypes.map(type => (
+                            <SelectItem key={type.id} value={type.id}>
+                              {type.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -209,10 +372,10 @@ export function AddEditRoomForm({ mode, roomData }: AddEditRoomFormProps) {
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="maxOccupancy"
+                    name="max_adults"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Max Occupancy</FormLabel>
+                        <FormLabel>Max Adults</FormLabel>
                         <FormControl>
                           <Input type="number" placeholder="e.g. 2" {...field} />
                         </FormControl>
@@ -223,18 +386,46 @@ export function AddEditRoomForm({ mode, roomData }: AddEditRoomFormProps) {
 
                   <FormField
                     control={form.control}
-                    name="basePrice"
+                    name="max_children"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Base Price</FormLabel>
+                        <FormLabel>Max Children</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="e.g. 150" {...field} />
+                          <Input type="number" placeholder="e.g. 0" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
+
+                <FormField
+                  control={form.control}
+                  name="base_rate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Base Rate (per night)</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="e.g. 150" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="floor"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Floor</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. 1" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </CardContent>
             </Card>
 
@@ -292,6 +483,7 @@ export function AddEditRoomForm({ mode, roomData }: AddEditRoomFormProps) {
                       <Select 
                         onValueChange={field.onChange} 
                         defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -302,6 +494,7 @@ export function AddEditRoomForm({ mode, roomData }: AddEditRoomFormProps) {
                           <SelectItem value="available">Available</SelectItem>
                           <SelectItem value="occupied">Occupied</SelectItem>
                           <SelectItem value="maintenance">Maintenance</SelectItem>
+                          <SelectItem value="cleaning">Cleaning</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -311,37 +504,7 @@ export function AddEditRoomForm({ mode, roomData }: AddEditRoomFormProps) {
 
                 <FormField
                   control={form.control}
-                  name="owner"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Owner</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select an owner" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="John Doe">John Doe</SelectItem>
-                          <SelectItem value="Jane Smith">Jane Smith</SelectItem>
-                          <SelectItem value="Robert Wilson">Robert Wilson</SelectItem>
-                          <SelectItem value="Lisa Wong">Lisa Wong</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        The owner of this property
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="isActive"
+                  name="active"
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                       <div className="space-y-0.5">
@@ -367,13 +530,39 @@ export function AddEditRoomForm({ mode, roomData }: AddEditRoomFormProps) {
             <Button type="button" variant="outline" onClick={handleCancel}>
               Cancel
             </Button>
-            <Button type="submit" className="flex items-center gap-2">
-              <Save className="h-4 w-4" />
+            <Button 
+              type="submit" 
+              className="flex items-center gap-2"
+              disabled={isLoading}
+            >
+              {isLoading ? <Loader className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               {mode === 'add' ? 'Create Room' : 'Save Changes'}
             </Button>
           </div>
         </form>
       </Form>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to delete this room?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the room 
+              and remove the data from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

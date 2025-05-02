@@ -1,9 +1,16 @@
-
 import React, { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, BedDouble, Building, Edit, MoreHorizontal, Loader } from 'lucide-react';
+import { 
+  ArrowRight, 
+  BedDouble, 
+  Building, 
+  Edit, 
+  MoreHorizontal, 
+  Loader, 
+  Trash2 
+} from 'lucide-react';
 import { ViewToggle } from '@/components/ui/ViewToggle';
 import { 
   DropdownMenu,
@@ -11,8 +18,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useRooms } from '@/hooks/useRooms';
+import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 function getStatusBadge(status: string) {
   switch (status) {
@@ -42,7 +61,15 @@ export function RoomList({
   searchQuery = '',
   filterValue = 'all'
 }: RoomListProps) {
-  const { data: rooms, isLoading, error } = useRooms();
+  const { data: rooms, isLoading, error, deleteRoom, updateRoomStatus, refetch } = useRooms();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [roomToDelete, setRoomToDelete] = React.useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
+
+  // Check if user is admin
+  const isAdmin = user?.role === 'admin';
 
   // Apply filters to rooms
   const filteredRooms = useMemo(() => {
@@ -65,6 +92,51 @@ export function RoomList({
     });
   }, [rooms, searchQuery, filterValue]);
 
+  // Handle delete room
+  const handleDeleteClick = (roomId: string) => {
+    setRoomToDelete(roomId);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (roomToDelete) {
+      const result = await deleteRoom(roomToDelete);
+      if (result.success) {
+        toast({
+          title: "Room deleted",
+          description: result.message,
+        });
+        // Refresh the data
+        refetch();
+      } else {
+        toast({
+          title: "Error",
+          description: result.message,
+          variant: "destructive"
+        });
+      }
+      setShowDeleteDialog(false);
+      setRoomToDelete(null);
+    }
+  };
+
+  // Handle status change
+  const handleStatusChange = async (roomId: string, newStatus: string) => {
+    const result = await updateRoomStatus(roomId, newStatus);
+    if (result.success) {
+      toast({
+        title: "Status updated",
+        description: result.message,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: result.message,
+        variant: "destructive"
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -81,7 +153,7 @@ export function RoomList({
         <Button 
           variant="outline" 
           className="mt-4"
-          onClick={() => window.location.reload()}
+          onClick={() => refetch()}
         >
           Retry
         </Button>
@@ -121,7 +193,7 @@ export function RoomList({
                   </td>
                   <td className="px-6 py-4">{room.property}</td>
                   <td className="px-6 py-4">{room.type}</td>
-                  <td className="px-6 py-4">{room.capacity} persons</td>
+                  <td className="px-6 py-4">{room.capacity}</td>
                   <td className="px-6 py-4">{getStatusBadge(room.status)}</td>
                   <td className="px-6 py-4">${room.rate}/night</td>
                   <td className="px-6 py-4">
@@ -142,8 +214,36 @@ export function RoomList({
                             <Link to={`/rooms/view/${room.id}`}>View Details</Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
-                            <Link to={`/rooms/edit/${room.id}`}>Edit</Link>
+                            <Link to={`/rooms/edit/${room.id}`}>Edit Room</Link>
                           </DropdownMenuItem>
+                          {/* Status change options */}
+                          <DropdownMenuItem 
+                            onClick={() => handleStatusChange(room.id, 'available')}
+                            disabled={room.status === 'available'}
+                          >
+                            Mark as Available
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleStatusChange(room.id, 'cleaning')}
+                            disabled={room.status === 'cleaning'}
+                          >
+                            Mark as Cleaning
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleStatusChange(room.id, 'maintenance')}
+                            disabled={room.status === 'maintenance'}
+                          >
+                            Mark as Maintenance
+                          </DropdownMenuItem>
+                          {/* Delete option - only for admins */}
+                          {isAdmin && (
+                            <DropdownMenuItem 
+                              className="text-red-600"
+                              onClick={() => handleDeleteClick(room.id)}
+                            >
+                              Delete Room
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -195,7 +295,7 @@ export function RoomList({
                         </div>
                         <div>
                           <p className="text-xs font-medium text-muted-foreground">TYPE</p>
-                          <p className="text-sm">{room.type} • {room.capacity} persons</p>
+                          <p className="text-sm">{room.type} • {room.capacity}</p>
                         </div>
                       </div>
                       
@@ -210,18 +310,58 @@ export function RoomList({
                       </div>
                     </div>
                     
-                    <div className="flex justify-end gap-2 border-t pt-4">
-                      <Button size="sm" variant="outline" asChild>
-                        <Link to={`/rooms/edit/${room.id}`}>
-                          <Edit className="h-3.5 w-3.5 mr-1" />
-                          Edit
-                        </Link>
-                      </Button>
-                      <Button size="sm" asChild>
-                        <Link to={`/rooms/view/${room.id}`}>
-                          View
-                        </Link>
-                      </Button>
+                    <div className="flex justify-between gap-2 border-t pt-4">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="outline">
+                            <MoreHorizontal className="h-3.5 w-3.5 mr-1" />
+                            Actions
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {/* Status change options */}
+                          <DropdownMenuItem 
+                            onClick={() => handleStatusChange(room.id, 'available')}
+                            disabled={room.status === 'available'}
+                          >
+                            Mark as Available
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleStatusChange(room.id, 'cleaning')}
+                            disabled={room.status === 'cleaning'}
+                          >
+                            Mark as Cleaning
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleStatusChange(room.id, 'maintenance')}
+                            disabled={room.status === 'maintenance'}
+                          >
+                            Mark as Maintenance
+                          </DropdownMenuItem>
+                          {/* Delete option - only for admins */}
+                          {isAdmin && (
+                            <DropdownMenuItem 
+                              className="text-red-600"
+                              onClick={() => handleDeleteClick(room.id)}
+                            >
+                              Delete Room
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" asChild>
+                          <Link to={`/rooms/edit/${room.id}`}>
+                            <Edit className="h-3.5 w-3.5 mr-1" />
+                            Edit
+                          </Link>
+                        </Button>
+                        <Button size="sm" asChild>
+                          <Link to={`/rooms/view/${room.id}`}>
+                            View
+                          </Link>
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -235,6 +375,28 @@ export function RoomList({
           )}
         </div>
       )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to delete this room?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the room and
+              remove the data from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

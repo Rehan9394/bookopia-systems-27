@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Search, Building, DollarSign, Percent, Eye, Pencil, Trash2 } from 'lucide-react';
+import { PlusCircle, Search, Building, DollarSign, Percent, Eye, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -27,83 +26,42 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
-interface Owner {
-  id: number;
-  name: string;
-  email: string;
-  properties: number;
-  revenue: number;
-  occupancy: number;
-  avatar: string | null;
-}
+import { useOwners, useDeleteOwner, OwnerWithStats } from '@/hooks/useOwners';
 
 const Owners = () => {
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   
-  // Sample data - in a real app this would come from a database
-  const owners: Owner[] = [
-    { 
-      id: 1, 
-      name: 'David Miller', 
-      email: 'david@example.com', 
-      properties: 3, 
-      revenue: 45000, 
-      occupancy: 78,
-      avatar: null 
-    },
-    { 
-      id: 2, 
-      name: 'Emma Wilson', 
-      email: 'emma@example.com', 
-      properties: 2, 
-      revenue: 33000, 
-      occupancy: 65,
-      avatar: null 
-    },
-    { 
-      id: 3, 
-      name: 'James Taylor', 
-      email: 'james@example.com', 
-      properties: 5, 
-      revenue: 87000, 
-      occupancy: 82,
-      avatar: null 
-    },
-    { 
-      id: 4, 
-      name: 'Sophia Garcia', 
-      email: 'sophia@example.com', 
-      properties: 1, 
-      revenue: 15000, 
-      occupancy: 72,
-      avatar: null 
-    },
-  ];
+  // Use the useOwners hook to fetch data from the database
+  const { data: owners = [], isLoading, error } = useOwners();
+  const deleteOwnerMutation = useDeleteOwner();
   
   const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('q') || "");
-  const [filteredOwners, setFilteredOwners] = useState<Owner[]>(owners);
+  const [filteredOwners, setFilteredOwners] = useState<OwnerWithStats[]>([]);
   
-  // Apply filters when search value changes
+  // Apply filters when search value changes or when owners data is loaded
   useEffect(() => {
-    if (searchQuery) {
-      const filtered = owners.filter(owner => 
-        owner.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        owner.email.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setFilteredOwners(filtered);
+    if (owners.length > 0) {
+      if (searchQuery) {
+        const filtered = owners.filter(owner => 
+          owner.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          owner.email?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        setFilteredOwners(filtered);
+      } else {
+        setFilteredOwners(owners);
+      }
     } else {
-      setFilteredOwners(owners);
+      setFilteredOwners([]);
     }
     
     // Update URL with search parameter
     const params = new URLSearchParams();
     if (searchQuery) params.set('q', searchQuery);
     setSearchParams(params, { replace: true });
-  }, [searchQuery]);
+  }, [searchQuery, owners]);
 
-  const getInitials = (name: string) => {
+  const getInitials = (name: string = '') => {
     return name
       .split(' ')
       .map(part => part[0])
@@ -111,7 +69,7 @@ const Owners = () => {
       .toUpperCase();
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number = 0) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
@@ -127,14 +85,44 @@ const Owners = () => {
     });
   };
   
-  const handleDeleteOwner = (ownerId: number) => {
-    // In a real app, this would call an API to delete the owner
-    toast({
-      title: "Owner Deleted",
-      description: `Owner ID ${ownerId} has been removed.`,
-      variant: "destructive"
-    });
+  const handleDeleteOwner = async (ownerId: string) => {
+    try {
+      await deleteOwnerMutation.mutateAsync(ownerId);
+    } catch (error) {
+      // Error already handled in the mutation hook
+    }
   };
+
+  // Display a loading state
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading owners...</span>
+      </div>
+    );
+  }
+
+  // Display error state
+  if (error) {
+    return (
+      <Card className="p-6 mx-auto my-8 max-w-lg">
+        <CardHeader>
+          <CardTitle className="text-red-500">Error Loading Owners</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p>There was a problem loading the owners: {(error as Error).message}</p>
+          <Button className="mt-4" onClick={() => window.location.reload()}>
+            Try Again
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Calculate totals for summary cards
+  const totalProperties = owners.reduce((acc, owner) => acc + (owner.propertiesCount || 0), 0);
+  const totalRevenue = owners.reduce((acc, owner) => acc + (owner.revenue || 0), 0);
 
   return (
     <div className="animate-fade-in">
@@ -172,7 +160,7 @@ const Owners = () => {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <div className="text-2xl font-bold">{owners.reduce((acc, owner) => acc + owner.properties, 0)}</div>
+              <div className="text-2xl font-bold">{totalProperties}</div>
               <div className="p-2 bg-primary/10 rounded-full text-primary">
                 <Building className="h-5 w-5" />
               </div>
@@ -186,7 +174,7 @@ const Owners = () => {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <div className="text-2xl font-bold">{formatCurrency(owners.reduce((acc, owner) => acc + owner.revenue, 0))}</div>
+              <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
               <div className="p-2 bg-primary/10 rounded-full text-primary">
                 <DollarSign className="h-5 w-5" />
               </div>
@@ -246,18 +234,18 @@ const Owners = () => {
                 <TableRow key={owner.id}>
                   <TableCell className="font-medium flex items-center gap-3">
                     <Avatar>
-                      <AvatarImage src={owner.avatar || undefined} />
-                      <AvatarFallback>{getInitials(owner.name)}</AvatarFallback>
+                      <AvatarImage src={owner.avatar_url || undefined} />
+                      <AvatarFallback>{getInitials(owner.name || '')}</AvatarFallback>
                     </Avatar>
                     <span>{owner.name}</span>
                   </TableCell>
                   <TableCell>{owner.email}</TableCell>
-                  <TableCell>{owner.properties}</TableCell>
-                  <TableCell>{formatCurrency(owner.revenue)}</TableCell>
+                  <TableCell>{owner.propertiesCount || 0}</TableCell>
+                  <TableCell>{formatCurrency(owner.revenue || 0)}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Percent className="h-4 w-4 text-muted-foreground" />
-                      <span>{owner.occupancy}%</span>
+                      <span>{owner.occupancy || 0}%</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
@@ -290,8 +278,17 @@ const Owners = () => {
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDeleteOwner(owner.id)}>
-                              Delete
+                            <AlertDialogAction
+                              disabled={deleteOwnerMutation.isPending}
+                              onClick={() => handleDeleteOwner(owner.id)}>
+                              {deleteOwnerMutation.isPending ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Deleting...
+                                </>
+                              ) : (
+                                "Delete"
+                              )}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -303,7 +300,9 @@ const Owners = () => {
             ) : (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  No owners found matching your search
+                  {searchQuery 
+                    ? "No owners found matching your search" 
+                    : "No owners found. Add your first owner to get started."}
                 </TableCell>
               </TableRow>
             )}

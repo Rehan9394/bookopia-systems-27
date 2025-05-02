@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,9 +14,9 @@ import {
 } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { useUsers } from '@/hooks/useUsers';
+import { useUsers, useDeleteUser } from '@/hooks/useUsers';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,15 +28,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { User } from '@/services/supabase-types';
 
 const Users = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: allUsers, isLoading, error } = useUsers();
+  const deleteUserMutation = useDeleteUser();
   
   const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('q') || "");
   const [roleFilter, setRoleFilter] = useState<string>(searchParams.get('role') || "all");
-  const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   
   // Apply filters when values change or when data loads
   useEffect(() => {
@@ -48,14 +50,15 @@ const Users = () => {
     // Apply search filter
     if (searchQuery) {
       filtered = filtered.filter(user => 
-        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase())
+        (user.name?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (user.first_name + ' ' + user.last_name).toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
     
     // Apply role filter
     if (roleFilter !== 'all') {
-      filtered = filtered.filter(user => user.role === roleFilter);
+      filtered = filtered.filter(user => user.role === roleFilter.toLowerCase());
     }
     
     setFilteredUsers(filtered);
@@ -66,15 +69,21 @@ const Users = () => {
     if (roleFilter !== 'all') params.set('role', roleFilter);
     
     setSearchParams(params, { replace: true });
-  }, [searchQuery, roleFilter, allUsers]);
+  }, [searchQuery, roleFilter, allUsers, setSearchParams]);
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'Admin': return 'bg-blue-100 text-blue-800';
-      case 'Booking Agent': return 'bg-green-100 text-green-800';
-      case 'Owner': return 'bg-purple-100 text-purple-800';
-      case 'Cleaning Staff': return 'bg-yellow-100 text-yellow-800';
+      case 'admin': return 'bg-blue-100 text-blue-800';
+      case 'agent': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getRoleDisplay = (role: string) => {
+    switch (role) {
+      case 'admin': return 'Admin';
+      case 'agent': return 'Agent';
+      default: return role;
     }
   };
 
@@ -98,11 +107,13 @@ const Users = () => {
   };
   
   const handleDeleteUser = (userId: string) => {
-    // In a real app, this would call an API to delete the user
-    toast({
-      title: "User Deleted",
-      description: `User ID ${userId} has been removed.`,
-      variant: "destructive"
+    deleteUserMutation.mutate(userId, {
+      onSuccess: () => {
+        toast({
+          title: "User Deleted",
+          description: "User has been successfully removed.",
+        });
+      }
     });
   };
 
@@ -144,18 +155,18 @@ const Users = () => {
               All Roles
             </Button>
             <Button 
-              variant={roleFilter === 'Admin' ? "default" : "outline"} 
+              variant={roleFilter === 'admin' ? "default" : "outline"} 
               className="flex-1"
-              onClick={() => handleRoleFilter('Admin')}
+              onClick={() => handleRoleFilter('admin')}
             >
               Admins
             </Button>
             <Button 
-              variant={roleFilter === 'Booking Agent' ? "default" : "outline"} 
+              variant={roleFilter === 'agent' ? "default" : "outline"} 
               className="flex-1"
-              onClick={() => handleRoleFilter('Booking Agent')}
+              onClick={() => handleRoleFilter('agent')}
             >
-              Booking Agents
+              Agents
             </Button>
           </div>
         </div>
@@ -181,7 +192,7 @@ const Users = () => {
       </Card>
       
       <Card>
-        {isLoading ? (
+        {isLoading || deleteUserMutation.isPending ? (
           <div className="flex items-center justify-center h-64">
             <Loader className="h-8 w-8 animate-spin text-primary" />
             <span className="ml-2">Loading users...</span>
@@ -205,6 +216,7 @@ const Users = () => {
                 <TableHead>User</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -215,13 +227,20 @@ const Users = () => {
                     <TableCell className="font-medium flex items-center gap-3">
                       <Avatar>
                         <AvatarImage src={user.avatar_url || undefined} />
-                        <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                        <AvatarFallback>{getInitials(user.first_name + ' ' + user.last_name)}</AvatarFallback>
                       </Avatar>
-                      <span>{user.name}</span>
+                      <span>{user.first_name} {user.last_name}</span>
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
-                      <Badge className={getRoleColor(user.role)} variant="outline">{user.role}</Badge>
+                      <Badge className={getRoleColor(user.role)} variant="outline">
+                        {getRoleDisplay(user.role)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={user.status ? "outline" : "destructive"}>
+                        {user.status ? 'Active' : 'Inactive'}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -248,7 +267,7 @@ const Users = () => {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                This will permanently delete the user account for {user.name}. This action cannot be undone.
+                                This will permanently delete the user account for {user.first_name} {user.last_name}. This action cannot be undone.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -265,7 +284,7 @@ const Users = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                     No users found matching your filters
                   </TableCell>
                 </TableRow>

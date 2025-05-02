@@ -40,7 +40,8 @@ export const fetchRooms = async (): Promise<Room[]> => {
     .from('rooms')
     .select(`
       *,
-      properties!inner(name)
+      properties!inner(name),
+      room_types(name)
     `);
   
   if (error) {
@@ -51,6 +52,7 @@ export const fetchRooms = async (): Promise<Room[]> => {
   return (data || []).map(room => ({
     ...room,
     property: room.properties?.name,
+    type: room.room_types?.name,
     status: room.status as 'available' | 'occupied' | 'maintenance' | 'cleaning'
   })) as Room[];
 };
@@ -97,6 +99,97 @@ export const fetchRoomByNumber = async (number: string): Promise<Room> => {
     property: data.properties?.name,
     status: data.status as 'available' | 'occupied' | 'maintenance' | 'cleaning'
   } as Room;
+};
+
+export const createRoom = async (roomData: Partial<Room>): Promise<Room> => {
+  // Ensure required fields are present
+  if (!roomData.number || 
+      !roomData.property_id || 
+      !roomData.room_type_id) {
+    throw new Error('Missing required fields for room');
+  }
+
+  const insertData = {
+    number: roomData.number,
+    property_id: roomData.property_id,
+    room_type_id: roomData.room_type_id,
+    status: roomData.status || 'available',
+    floor: roomData.floor || null,
+    size: roomData.size || null,
+    description: roomData.description || null,
+    max_adults: roomData.max_adults || 2,
+    max_children: roomData.max_children || 0,
+    base_rate: roomData.base_rate || 0,
+    active: roomData.active === undefined ? true : roomData.active,
+    amenities: roomData.amenities || null,
+    image_urls: roomData.image_urls || null,
+    notes: roomData.notes || null
+  };
+
+  const { data, error } = await supabase
+    .from('rooms')
+    .insert(insertData)
+    .select(`
+      *,
+      properties!inner(name)
+    `)
+    .single();
+  
+  if (error) {
+    console.error('Error creating room:', error);
+    throw error;
+  }
+  
+  return {
+    ...data,
+    property: data.properties?.name,
+    status: data.status as 'available' | 'occupied' | 'maintenance' | 'cleaning'
+  } as Room;
+};
+
+export const updateRoom = async (id: string, roomData: Partial<Room>): Promise<Room> => {
+  // Prepare update data - only include fields that are present in the roomData
+  const updateData: any = {
+    ...roomData,
+    updated_at: new Date().toISOString()
+  };
+  
+  // Remove any relationships or calculated fields that shouldn't be sent to the database
+  delete updateData.properties;
+  delete updateData.property;
+  
+  const { data, error } = await supabase
+    .from('rooms')
+    .update(updateData)
+    .eq('id', id)
+    .select(`
+      *,
+      properties!inner(name)
+    `)
+    .single();
+  
+  if (error) {
+    console.error(`Error updating room with ID ${id}:`, error);
+    throw error;
+  }
+  
+  return {
+    ...data,
+    property: data.properties?.name,
+    status: data.status as 'available' | 'occupied' | 'maintenance' | 'cleaning'
+  } as Room;
+};
+
+export const deleteRoom = async (id: string): Promise<void> => {
+  const { error } = await supabase
+    .from('rooms')
+    .delete()
+    .eq('id', id);
+  
+  if (error) {
+    console.error(`Error deleting room with ID ${id}:`, error);
+    throw error;
+  }
 };
 
 export const fetchBookings = async (): Promise<Booking[]> => {
@@ -428,7 +521,112 @@ export const fetchUsers = async (): Promise<User[]> => {
     throw error;
   }
   
-  return data || [];
+  // Add computed property 'name' by combining first and last name
+  return (data || []).map(user => ({
+    ...user,
+    name: `${user.first_name} ${user.last_name}`,
+  }));
+};
+
+export const fetchUserById = async (id: string): Promise<User> => {
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', id)
+    .single();
+  
+  if (error) {
+    console.error(`Error fetching user with ID ${id}:`, error);
+    throw error;
+  }
+  
+  return {
+    ...data,
+    name: `${data.first_name} ${data.last_name}`,
+  };
+};
+
+export const createUser = async (userData: Partial<User>): Promise<User> => {
+  // Ensure required fields are present
+  if (!userData.email || 
+      !userData.password || 
+      !userData.first_name || 
+      !userData.last_name ||
+      !userData.role) {
+    throw new Error('Missing required fields for user');
+  }
+
+  const insertData = {
+    email: userData.email,
+    password: userData.password,
+    first_name: userData.first_name,
+    last_name: userData.last_name,
+    role: userData.role,
+    phone: userData.phone || null,
+    avatar_url: userData.avatar_url || null,
+    status: userData.status === undefined ? true : userData.status,
+    created_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabase
+    .from('users')
+    .insert(insertData)
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error creating user:', error);
+    throw error;
+  }
+  
+  return {
+    ...data,
+    name: `${data.first_name} ${data.last_name}`,
+  };
+};
+
+export const updateUser = async (id: string, userData: Partial<User>): Promise<User> => {
+  const updateData: any = {
+    ...userData,
+    updated_at: new Date().toISOString()
+  };
+  
+  // Remove password if empty (to avoid overwriting existing password)
+  if (updateData.password === '') {
+    delete updateData.password;
+  }
+  
+  // Remove computed properties that shouldn't be sent to the database
+  delete updateData.name;
+  
+  const { data, error } = await supabase
+    .from('users')
+    .update(updateData)
+    .eq('id', id)
+    .select()
+    .single();
+  
+  if (error) {
+    console.error(`Error updating user with ID ${id}:`, error);
+    throw error;
+  }
+  
+  return {
+    ...data,
+    name: `${data.first_name} ${data.last_name}`,
+  };
+};
+
+export const deleteUser = async (id: string): Promise<void> => {
+  const { error } = await supabase
+    .from('users')
+    .delete()
+    .eq('id', id);
+  
+  if (error) {
+    console.error(`Error deleting user with ID ${id}:`, error);
+    throw error;
+  }
 };
 
 export const fetchOwners = async (): Promise<Owner[]> => {
@@ -442,6 +640,333 @@ export const fetchOwners = async (): Promise<Owner[]> => {
   }
   
   return data || [];
+};
+
+export const fetchOwnerById = async (id: string): Promise<Owner> => {
+  const { data, error } = await supabase
+    .from('owners')
+    .select(`
+      *,
+      room_owner_assignments(
+        *,
+        rooms(
+          number,
+          properties(name)
+        )
+      )
+    `)
+    .eq('id', id)
+    .single();
+  
+  if (error) {
+    console.error(`Error fetching owner with ID ${id}:`, error);
+    throw error;
+  }
+  
+  return data;
+};
+
+export const createOwner = async (ownerData: Partial<Owner>): Promise<Owner> => {
+  // Ensure required fields are present
+  if (!ownerData.email || 
+      !ownerData.password || 
+      !ownerData.first_name || 
+      !ownerData.last_name) {
+    throw new Error('Missing required fields for owner');
+  }
+
+  const insertData = {
+    email: ownerData.email,
+    password: ownerData.password,
+    first_name: ownerData.first_name,
+    last_name: ownerData.last_name,
+    phone: ownerData.phone || null,
+    address: ownerData.address || null,
+    city: ownerData.city || null,
+    state: ownerData.state || null,
+    zip_code: ownerData.zip_code || null,
+    country: ownerData.country || null,
+    notes: ownerData.notes || null,
+    birth_date: ownerData.birth_date || null,
+    citizenship: ownerData.citizenship || null,
+    avatar_url: ownerData.avatar_url || null,
+    joined_date: ownerData.joined_date || new Date().toISOString().split('T')[0],
+    status: ownerData.status === undefined ? true : ownerData.status
+  };
+
+  const { data, error } = await supabase
+    .from('owners')
+    .insert(insertData)
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error creating owner:', error);
+    throw error;
+  }
+  
+  return data;
+};
+
+export const updateOwner = async (id: string, ownerData: Partial<Owner>): Promise<Owner> => {
+  const updateData: any = {
+    ...ownerData,
+    updated_at: new Date().toISOString()
+  };
+  
+  // Remove password if empty (to avoid overwriting existing password)
+  if (updateData.password === '') {
+    delete updateData.password;
+  }
+  
+  // Remove relationships that shouldn't be sent to the database
+  delete updateData.room_owner_assignments;
+  
+  const { data, error } = await supabase
+    .from('owners')
+    .update(updateData)
+    .eq('id', id)
+    .select()
+    .single();
+  
+  if (error) {
+    console.error(`Error updating owner with ID ${id}:`, error);
+    throw error;
+  }
+  
+  return data;
+};
+
+export const deleteOwner = async (id: string): Promise<void> => {
+  const { error } = await supabase
+    .from('owners')
+    .delete()
+    .eq('id', id);
+  
+  if (error) {
+    console.error(`Error deleting owner with ID ${id}:`, error);
+    throw error;
+  }
+};
+
+// Mock owner login functionality
+export const loginOwner = async (email: string, password: string): Promise<Owner | null> => {
+  try {
+    // Check against the database first
+    const { data, error } = await supabase
+      .from('owners')
+      .select('*')
+      .eq('email', email)
+      .single();
+    
+    if (!error && data) {
+      // Owner found in database
+      // Check if password matches
+      if (data.password === password) {
+        // Update last login timestamp
+        await supabase
+          .from('owners')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', data.id);
+        
+        return data;
+      }
+      return null; // Password doesn't match
+    }
+    
+    // If owner not found in database, check if we should use demo credentials
+    // This is a fallback for demo purposes only
+    if (email === 'owner@example.com') {
+      console.log("Using demo owner credentials");
+      // Mock owner for demo
+      return {
+        id: '00000000-0000-0000-0000-000000000003',
+        email: 'owner@example.com',
+        first_name: 'Demo',
+        last_name: 'Owner',
+        password: '',
+        phone: null,
+        address: '',
+        city: '',
+        state: '',
+        zip_code: '',
+        country: '',
+        notes: '',
+        status: true,
+        joined_date: new Date().toISOString(),
+        birth_date: null,
+        avatar_url: null,
+        citizenship: '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+    } else if (email === 'rehan@gmail.com' && password === 'Rehan8688@') {
+      console.log("Using demo Rehan credentials");
+      // Support the demo credentials shown in the OwnerLogin page
+      return {
+        id: '00000000-0000-0000-0000-000000000004',
+        email: 'rehan@gmail.com',
+        first_name: 'Rehan',
+        last_name: 'Demo',
+        password: '',
+        phone: null,
+        address: '',
+        city: '',
+        state: '',
+        zip_code: '',
+        country: '',
+        notes: '',
+        status: true,
+        joined_date: new Date().toISOString(),
+        birth_date: null,
+        avatar_url: null,
+        citizenship: '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+    }
+    
+    return null; // Owner not found
+  } catch (err) {
+    console.error('Owner login error:', err);
+    return null;
+  }
+};
+
+// Mock user login functionality
+export const loginUser = async (email: string, password: string): Promise<User | null> => {
+  try {
+    // Check against the database first
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+    
+    if (!error && data) {
+      // User found in database
+      // Check if password matches
+      if (data.password === password) {
+        // Update last login timestamp
+        await supabase
+          .from('users')
+          .update({ last_login: new Date().toISOString() })
+          .eq('id', data.id);
+        
+        return {
+          ...data,
+          name: `${data.first_name} ${data.last_name}`,
+        };
+      }
+      return null; // Password doesn't match
+    }
+    
+    // If user not found in database, check if we should use demo credentials
+    // This is a fallback for demo purposes only
+    if (email === 'admin@example.com') {
+      console.log("Using demo admin credentials");
+      // Mock admin user
+      return {
+        id: '00000000-0000-0000-0000-000000000001',
+        email: 'admin@example.com',
+        first_name: 'Demo',
+        last_name: 'Admin',
+        role: 'admin',
+        phone: null,
+        avatar_url: null,
+        password: '',
+        status: true,
+        last_login: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+    } else if (email === 'agent@example.com') {
+      console.log("Using demo agent credentials");
+      // Mock agent/staff user
+      return {
+        id: '00000000-0000-0000-0000-000000000002',
+        email: 'agent@example.com',
+        first_name: 'Demo',
+        last_name: 'Agent',
+        role: 'agent',
+        phone: null,
+        avatar_url: null,
+        password: '',
+        status: true,
+        last_login: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+    }
+    
+    return null; // User not found
+  } catch (err) {
+    console.error('Login error:', err);
+    return null;
+  }
+};
+
+// Fetch owner financial info
+export const fetchOwnerFinancialInfo = async (ownerId: string): Promise<any> => {
+  const { data, error } = await supabase
+    .from('owner_financial_info')
+    .select('*')
+    .eq('owner_id', ownerId)
+    .maybeSingle(); // Use maybeSingle because the owner might not have financial info yet
+  
+  if (error) {
+    console.error(`Error fetching financial info for owner ID ${ownerId}:`, error);
+    throw error;
+  }
+  
+  return data;
+};
+
+// Create or update owner financial info
+export const saveOwnerFinancialInfo = async (ownerId: string, financialData: any): Promise<any> => {
+  // Check if financial info already exists
+  const { data: existingData } = await supabase
+    .from('owner_financial_info')
+    .select('id')
+    .eq('owner_id', ownerId)
+    .maybeSingle();
+  
+  if (existingData) {
+    // Update existing financial info
+    const { data, error } = await supabase
+      .from('owner_financial_info')
+      .update({
+        ...financialData,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existingData.id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error(`Error updating financial info for owner ID ${ownerId}:`, error);
+      throw error;
+    }
+    
+    return data;
+  } else {
+    // Create new financial info
+    const { data, error } = await supabase
+      .from('owner_financial_info')
+      .insert({
+        owner_id: ownerId,
+        ...financialData
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error(`Error creating financial info for owner ID ${ownerId}:`, error);
+      throw error;
+    }
+    
+    return data;
+  }
 };
 
 export const fetchExpenses = async (): Promise<Expense[]> => {
@@ -461,6 +986,114 @@ export const fetchExpenses = async (): Promise<Expense[]> => {
   }
   
   return data || [];
+};
+
+export const fetchExpenseById = async (id: string): Promise<Expense> => {
+  const { data, error } = await supabase
+    .from('expenses')
+    .select(`
+      *,
+      properties!left(name),
+      rooms!left(number),
+      owners!left(first_name, last_name)
+    `)
+    .eq('id', id)
+    .single();
+  
+  if (error) {
+    console.error(`Error fetching expense with ID ${id}:`, error);
+    throw error;
+  }
+  
+  return data;
+};
+
+export const createExpense = async (expenseData: Partial<Expense>): Promise<Expense> => {
+  // Ensure required fields are present
+  if (!expenseData.description || 
+      !expenseData.amount || 
+      !expenseData.date || 
+      !expenseData.category) {
+    throw new Error('Missing required fields for expense');
+  }
+
+  const insertData = {
+    description: expenseData.description,
+    amount: expenseData.amount,
+    date: expenseData.date,
+    category: expenseData.category,
+    property_id: expenseData.property_id || null,
+    room_id: expenseData.room_id || null,
+    owner_id: expenseData.owner_id || null,
+    vendor: expenseData.vendor || null,
+    payment_method: expenseData.payment_method || null,
+    receipt_url: expenseData.receipt_url || null,
+    notes: expenseData.notes || null,
+    created_by: expenseData.created_by || null,
+    created_at: new Date().toISOString()
+  };
+
+  const { data, error } = await supabase
+    .from('expenses')
+    .insert(insertData)
+    .select(`
+      *,
+      properties!left(name),
+      rooms!left(number),
+      owners!left(first_name, last_name)
+    `)
+    .single();
+  
+  if (error) {
+    console.error('Error creating expense:', error);
+    throw error;
+  }
+  
+  return data;
+};
+
+export const updateExpense = async (id: string, expenseData: Partial<Expense>): Promise<Expense> => {
+  // Prepare update data - only include fields that are present in the expenseData
+  const updateData: any = {
+    ...expenseData,
+    updated_at: new Date().toISOString()
+  };
+  
+  // Remove any relationships or calculated fields that shouldn't be sent to the database
+  delete updateData.properties;
+  delete updateData.rooms;
+  delete updateData.owners;
+  
+  const { data, error } = await supabase
+    .from('expenses')
+    .update(updateData)
+    .eq('id', id)
+    .select(`
+      *,
+      properties!left(name),
+      rooms!left(number),
+      owners!left(first_name, last_name)
+    `)
+    .single();
+  
+  if (error) {
+    console.error(`Error updating expense with ID ${id}:`, error);
+    throw error;
+  }
+  
+  return data;
+};
+
+export const deleteExpense = async (id: string): Promise<void> => {
+  const { error } = await supabase
+    .from('expenses')
+    .delete()
+    .eq('id', id);
+  
+  if (error) {
+    console.error(`Error deleting expense with ID ${id}:`, error);
+    throw error;
+  }
 };
 
 export const fetchCleaningTasks = async (): Promise<CleaningTask[]> => {
@@ -716,97 +1349,142 @@ export const deleteRoomType = async (id: string): Promise<void> => {
   }
 };
 
-// Mock user login functionality
-export const loginUser = async (email: string, password: string): Promise<User | null> => {
-  console.log("Using demo credentials");
-  
-  // For demo purposes, always log in with demo credentials
-  // In a real app, this would validate against a database
-  if (email === 'admin@example.com') {
-    // Mock admin user
-    return {
-      id: '00000000-0000-0000-0000-000000000001',
-      email: 'admin@example.com',
-      first_name: 'Demo',
-      last_name: 'Admin',
-      role: 'admin',
-      phone: null,
-      avatar_url: null,
-      password: '',
-      status: true,
-      last_login: new Date().toISOString(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-  } else if (email === 'agent@example.com') {
-    // Mock agent/staff user
-    return {
-      id: '00000000-0000-0000-0000-000000000002',
-      email: 'agent@example.com',
-      first_name: 'Demo',
-      last_name: 'Agent',
-      role: 'agent',
-      phone: null,
-      avatar_url: null,
-      password: '',
-      status: true,
-      last_login: new Date().toISOString(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-  }
-  
-  // If credentials don't match demo accounts, return null (login failed)
-  return null;
-};
-
-// Mock owner login functionality
-export const loginOwner = async (email: string, password: string): Promise<Owner | null> => {
-  // For demo purposes, use mock data
-  if (email === 'owner@example.com') {
-    return {
-      id: '00000000-0000-0000-0000-000000000003',
-      email: 'owner@example.com',
-      first_name: 'Demo',
-      last_name: 'Owner',
-      password: '',
-      phone: null,
-      address: '',
-      city: '',
-      state: '',
-      zip_code: '',
-      country: '',
-      notes: '',
-      status: true,
-      joined_date: new Date().toISOString(),
-      birth_date: null,
-      avatar_url: null,
-      citizenship: '',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-  }
-  
-  return null;
-};
-
 // Fetch room owner assignments
-export const fetchRoomOwnerAssignments = async (ownerId: string): Promise<RoomOwnerAssignment[]> => {
-  const { data, error } = await supabase
+export const fetchRoomOwnerAssignments = async (ownerId?: string): Promise<RoomOwnerAssignment[]> => {
+  let query = supabase
     .from('room_owner_assignments')
     .select(`
       *,
-      rooms!inner(number, property_id, properties!inner(name))
-    `)
-    .eq('owner_id', ownerId)
-    .eq('active', true);
+      rooms(
+        id,
+        number,
+        property_id,
+        properties(name)
+      ),
+      owners(id, first_name, last_name)
+    `);
+  
+  // If an owner ID is provided, filter assignments for that owner
+  if (ownerId) {
+    query = query.eq('owner_id', ownerId);
+  }
+  
+  const { data, error } = await query;
   
   if (error) {
-    console.error(`Error fetching room assignments for owner ID ${ownerId}:`, error);
+    console.error('Error fetching room owner assignments:', error);
     throw error;
   }
   
   return data || [];
+};
+
+export const createRoomOwnerAssignment = async (assignmentData: {
+  owner_id: string;
+  room_id: string;
+  commission_rate?: number;
+  notes?: string;
+}): Promise<RoomOwnerAssignment> => {
+  // First check if this room is already assigned to another owner
+  const { data: existingAssignments, error: checkError } = await supabase
+    .from('room_owner_assignments')
+    .select('id, owner_id')
+    .eq('room_id', assignmentData.room_id);
+  
+  if (checkError) {
+    console.error('Error checking existing room assignments:', checkError);
+    throw checkError;
+  }
+  
+  // If room is already assigned to another owner, throw an error
+  if (existingAssignments && existingAssignments.length > 0 && 
+      existingAssignments[0].owner_id !== assignmentData.owner_id) {
+    throw new Error('This room is already assigned to another owner');
+  }
+  
+  // Create the assignment
+  const { data, error } = await supabase
+    .from('room_owner_assignments')
+    .insert({
+      owner_id: assignmentData.owner_id,
+      room_id: assignmentData.room_id,
+      commission_rate: assignmentData.commission_rate || 10,
+      notes: assignmentData.notes || null,
+      created_at: new Date().toISOString()
+    })
+    .select(`
+      *,
+      rooms(
+        id,
+        number,
+        property_id,
+        properties(name)
+      ),
+      owners(id, first_name, last_name)
+    `)
+    .single();
+  
+  if (error) {
+    console.error('Error creating room owner assignment:', error);
+    throw error;
+  }
+  
+  return data;
+};
+
+export const deleteRoomOwnerAssignment = async (ownerId: string, roomId: string): Promise<void> => {
+  const { error } = await supabase
+    .from('room_owner_assignments')
+    .delete()
+    .eq('owner_id', ownerId)
+    .eq('room_id', roomId);
+  
+  if (error) {
+    console.error(`Error deleting room owner assignment for owner ${ownerId} and room ${roomId}:`, error);
+    throw error;
+  }
+};
+
+// Function to check available rooms (not assigned to any owner)
+export const fetchAvailableRoomsForOwner = async (): Promise<Room[]> => {
+  // First, get all rooms
+  const { data: allRooms, error: roomsError } = await supabase
+    .from('rooms')
+    .select(`
+      *,
+      properties!inner(name),
+      room_types(name)
+    `);
+  
+  if (roomsError) {
+    console.error('Error fetching rooms:', roomsError);
+    throw roomsError;
+  }
+  
+  // Next, get all room assignments
+  const { data: assignments, error: assignmentsError } = await supabase
+    .from('room_owner_assignments')
+    .select('room_id');
+  
+  if (assignmentsError) {
+    console.error('Error fetching room assignments:', assignmentsError);
+    throw assignmentsError;
+  }
+  
+  // Create a set of assigned room IDs for quick lookup
+  const assignedRoomIds = new Set((assignments || []).map(a => a.room_id));
+  
+  // Filter out assigned rooms
+  const availableRooms = (allRooms || [])
+    .filter(room => !assignedRoomIds.has(room.id))
+    .map(room => ({
+      ...room,
+      property: room.properties?.name,
+      type: room.room_types?.name,
+      status: room.status as 'available' | 'occupied' | 'maintenance' | 'cleaning'
+    })) as Room[];
+  
+  return availableRooms;
 };
 
 // Fetch audit logs
@@ -888,3 +1566,214 @@ export const updateSettings = async (settingsData: Partial<Settings>): Promise<S
   
   return data;
 };
+
+// Fetch room availability data
+export const fetchRoomAvailability = async (startDate?: string, endDate?: string): Promise<any[]> => {
+  // Default to the current month if no dates provided
+  const today = new Date();
+  const defaultStart = startDate || new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+  const defaultEnd = endDate || new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+  
+  // First fetch all rooms
+  const { data: rooms, error: roomsError } = await supabase
+    .from('rooms')
+    .select(`
+      id,
+      number,
+      properties!inner(id, name)
+    `);
+  
+  if (roomsError) {
+    console.error('Error fetching rooms for availability:', roomsError);
+    throw roomsError;
+  }
+  
+  // Then fetch bookings for the specified date range
+  const { data: bookings, error: bookingsError } = await supabase
+    .from('bookings')
+    .select(`
+      id,
+      room_id,
+      check_in_date,
+      check_out_date,
+      status,
+      guests!inner(first_name, last_name)
+    `)
+    .gte('check_in_date', defaultStart)
+    .lte('check_out_date', defaultEnd)
+    .in('status', ['pending', 'confirmed', 'checked_in']);
+  
+  if (bookingsError) {
+    console.error('Error fetching bookings for availability:', bookingsError);
+    throw bookingsError;
+  }
+  
+  // Combine room and booking data to create availability data
+  return rooms.map((room) => {
+    const roomBookings = bookings.filter(booking => booking.room_id === room.id);
+    
+    return {
+      id: room.id,
+      roomNumber: room.number,
+      property: room.properties?.name || '',
+      propertyId: room.properties?.id || '',
+      bookings: roomBookings.map(booking => ({
+        id: booking.id,
+        checkIn: booking.check_in_date,
+        checkOut: booking.check_out_date,
+        status: booking.status,
+        guestName: booking.guests ? `${booking.guests.first_name} ${booking.guests.last_name}` : 'Unknown Guest'
+      }))
+    };
+  });
+};
+
+// Fetch cleaning status data
+export const fetchCleaningStatus = async (date?: string): Promise<any[]> => {
+  // Format the current date if none provided
+  const targetDate = date || new Date().toISOString().split('T')[0];
+  
+  // Fetch rooms with their current status
+  const { data: rooms, error: roomsError } = await supabase
+    .from('rooms')
+    .select(`
+      id,
+      number,
+      status,
+      properties!inner(name),
+      last_cleaned
+    `);
+  
+  if (roomsError) {
+    console.error('Error fetching room cleaning status:', roomsError);
+    throw roomsError;
+  }
+  
+  // Fetch bookings for the given date to check for check-ins and check-outs
+  const { data: bookings, error: bookingsError } = await supabase
+    .from('bookings')
+    .select('id, room_id, check_in_date, check_out_date, status')
+    .or(`check_in_date.eq.${targetDate},check_out_date.eq.${targetDate}`);
+  
+  if (bookingsError) {
+    console.error('Error fetching bookings for cleaning status:', bookingsError);
+    throw bookingsError;
+  }
+  
+  // Map room status to cleaning status
+  const cleaningStatusMap: Record<string, string> = {
+    'available': 'clean',
+    'occupied': 'dirty',
+    'maintenance': 'dirty',
+    'cleaning': 'cleaning'
+  };
+  
+  // Enhance room data with cleaning status information
+  return (rooms || []).map(room => {
+    // Check if room has check-in or check-out today
+    const hasCheckin = bookings?.some(
+      b => b.room_id === room.id && 
+      b.check_in_date === targetDate && 
+      ['confirmed', 'pending'].includes(b.status)
+    ) || false;
+    
+    const hasCheckout = bookings?.some(
+      b => b.room_id === room.id && 
+      b.check_out_date === targetDate && 
+      ['confirmed', 'checked_in'].includes(b.status)
+    ) || false;
+    
+    // Convert room status to cleaning status
+    const cleaningStatus = cleaningStatusMap[room.status] || 'dirty';
+    
+    return {
+      id: room.id,
+      roomId: room.id,
+      roomNumber: room.number,
+      property: room.properties?.name || 'Unknown',
+      status: room.status,
+      cleaningStatus: cleaningStatus,
+      lastCleaned: room.last_cleaned,
+      hasCheckin,
+      hasCheckout,
+      notes: null // Can be populated from database if you have a notes field
+    };
+  });
+};
+
+export const updateRoomCleaningStatus = async (
+  roomId: string, 
+  status: string, 
+  notes?: string
+): Promise<void> => {
+  // Map cleaning status to room status
+  const roomStatus = {
+    'dirty': 'occupied',
+    'cleaning': 'cleaning',
+    'clean': 'available',
+    'inspected': 'available'
+  }[status] || 'available';
+  
+  // Update room status
+  const { error } = await supabase
+    .from('rooms')
+    .update({ 
+      status: roomStatus,
+      last_cleaned: status === 'clean' || status === 'inspected' ? new Date().toISOString() : undefined,
+      notes: notes !== undefined ? notes : undefined
+    })
+    .eq('id', roomId);
+  
+  if (error) {
+    console.error(`Error updating room cleaning status for ID ${roomId}:`, error);
+    throw error;
+  }
+};
+
+// Update room cleaning status
+export const updateRoomCleaningStatusLegacy = async (roomId: string, status: 'Clean' | 'Dirty' | 'In Progress'): Promise<void> => {
+  // Map cleaning status to room status
+  let roomStatus;
+  if (status === 'Clean') {
+    roomStatus = 'available';
+  } else if (status === 'In Progress') {
+    roomStatus = 'cleaning';
+  } else {
+    roomStatus = 'maintenance'; // Use maintenance to represent 'Dirty'
+  }
+  
+  // Update the room status
+  const { error } = await supabase
+    .from('rooms')
+    .update({ status: roomStatus, updated_at: new Date().toISOString() })
+    .eq('id', roomId);
+  
+  if (error) {
+    console.error(`Error updating room cleaning status for ID ${roomId}:`, error);
+    throw error;
+  }
+  
+  // If marked as clean, create a completed cleaning task
+  if (status === 'Clean') {
+    const completedAt = new Date().toISOString();
+    await supabase
+      .from('cleaning_tasks')
+      .insert({
+        room_id: roomId,
+        status: 'completed',
+        notes: 'Automatically marked as clean',
+        completed_at: completedAt,
+        created_at: completedAt
+      });
+  } else if (status === 'In Progress') {
+    // If marked as in progress, create a pending cleaning task
+    await supabase
+      .from('cleaning_tasks')
+      .insert({
+        room_id: roomId,
+        status: 'in_progress',
+        notes: 'Automatically marked as in progress',
+        created_at: new Date().toISOString()
+      });
+  }
+}

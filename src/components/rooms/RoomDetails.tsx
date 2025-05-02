@@ -1,14 +1,40 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, CalendarClock, Edit, Home, Loader, Settings, UserCheck } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  CalendarClock, 
+  Edit, 
+  Home, 
+  Loader, 
+  Settings, 
+  UserCheck,
+  Trash2 
+} from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { useRoom } from '@/hooks/useRooms';
 import { format } from 'date-fns';
+import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 function formatDate(dateString: string | null | undefined) {
   if (!dateString) return '';
@@ -26,7 +52,9 @@ function getStatusBadge(status: string) {
     case 'occupied':
       return <Badge className="bg-blue-100 text-blue-800">Occupied</Badge>;
     case 'maintenance':
-      return <Badge className="bg-yellow-100 text-yellow-800">Maintenance</Badge>;
+      return <Badge className="bg-red-100 text-red-800">Maintenance</Badge>;
+    case 'cleaning':
+      return <Badge className="bg-yellow-100 text-yellow-800">Cleaning</Badge>;
     default:
       return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
   }
@@ -38,7 +66,54 @@ interface RoomDetailsProps {
 
 export function RoomDetails({ roomId }: RoomDetailsProps) {
   const navigate = useNavigate();
-  const { data: room, isLoading, error } = useRoom(roomId);
+  const { data: room, isLoading, error, deleteRoom, updateRoomStatus } = useRoom(roomId);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  // Check if user is admin
+  const isAdmin = user?.role === 'admin';
+
+  // Handle delete room
+  const handleDeleteClick = () => {
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    const result = await deleteRoom();
+    if (result.success) {
+      toast({
+        title: "Room deleted",
+        description: result.message,
+      });
+      // Navigate back to rooms list
+      navigate('/rooms');
+    } else {
+      toast({
+        title: "Error",
+        description: result.message,
+        variant: "destructive"
+      });
+    }
+    setShowDeleteDialog(false);
+  };
+
+  // Handle status change
+  const handleStatusChange = async (newStatus: string) => {
+    const result = await updateRoomStatus(newStatus);
+    if (result.success) {
+      toast({
+        title: "Status updated",
+        description: result.message,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: result.message,
+        variant: "destructive"
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -78,18 +153,54 @@ export function RoomDetails({ roomId }: RoomDetailsProps) {
               <h1 className="text-3xl font-bold">Room {room.number}</h1>
               {getStatusBadge(room.status)}
             </div>
-            <p className="text-muted-foreground mt-1">{room.type} • Floor {room.floor}</p>
+            <p className="text-muted-foreground mt-1">{room.property} • Floor {room.floor}</p>
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            <Link to={`/rooms/edit/${room.id}`}>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Room
-            </Link>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                Actions
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link to={`/rooms/edit/${room.id}`}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Room
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => handleStatusChange('available')}
+                disabled={room.status === 'available'}
+              >
+                Mark as Available
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => handleStatusChange('cleaning')}
+                disabled={room.status === 'cleaning'}
+              >
+                Mark as Cleaning
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => handleStatusChange('maintenance')}
+                disabled={room.status === 'maintenance'}
+              >
+                Mark as Maintenance
+              </DropdownMenuItem>
+              {isAdmin && (
+                <DropdownMenuItem 
+                  className="text-red-600"
+                  onClick={handleDeleteClick}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Room
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button asChild>
-            <Link to="/bookings/new">Create Booking</Link>
+            <Link to={`/bookings/new?roomId=${room.id}`}>Create Booking</Link>
           </Button>
         </div>
       </div>
@@ -113,25 +224,26 @@ export function RoomDetails({ roomId }: RoomDetailsProps) {
                 <div>
                   <h3 className="text-lg font-semibold mb-2">Amenities</h3>
                   <div className="flex flex-wrap gap-2">
-                    {room.amenities && room.amenities.map((amenity, index) => (
-                      <Badge key={index} variant="outline" className="bg-primary/5">
-                        {amenity}
-                      </Badge>
-                    ))}
-                    {(!room.amenities || room.amenities.length === 0) && (
-                      <p className="text-muted-foreground">No amenities listed</p>
-                    )}
+                    {room.amenities && room.amenities.length > 0 ? 
+                      room.amenities.map((amenity, index) => (
+                        <Badge key={index} variant="outline" className="bg-primary/5">
+                          {amenity}
+                        </Badge>
+                      )) : (
+                        <p className="text-muted-foreground">No amenities listed</p>
+                      )
+                    }
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Base Price</p>
-                    <p className="font-medium">${room.rate} / night</p>
+                    <p className="font-medium">${room.base_rate} / night</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Max Occupancy</p>
-                    <p className="font-medium">{room.capacity} Guests</p>
+                    <p className="font-medium">{room.max_adults + (room.max_children || 0)} Guests</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Floor</p>
@@ -165,16 +277,41 @@ export function RoomDetails({ roomId }: RoomDetailsProps) {
                       </div>
                     </div>
                   ) : room.status === 'maintenance' ? (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                    <div className="bg-red-50 border border-red-200 rounded-md p-4">
                       <div className="flex items-start gap-3">
-                        <Settings className="h-5 w-5 text-yellow-500 mt-0.5" />
+                        <Settings className="h-5 w-5 text-red-500 mt-0.5" />
                         <div>
                           <p className="font-medium">Under Maintenance</p>
                           <p className="text-sm text-muted-foreground">
                             This room is currently unavailable due to maintenance work.
                           </p>
-                          <Button size="sm" variant="outline" className="mt-2">
-                            Update Status
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="mt-2"
+                            onClick={() => handleStatusChange('available')}
+                          >
+                            Mark as Available
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : room.status === 'cleaning' ? (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                      <div className="flex items-start gap-3">
+                        <Settings className="h-5 w-5 text-yellow-500 mt-0.5" />
+                        <div>
+                          <p className="font-medium">Being Cleaned</p>
+                          <p className="text-sm text-muted-foreground">
+                            This room is currently being cleaned and prepared.
+                          </p>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="mt-2"
+                            onClick={() => handleStatusChange('available')}
+                          >
+                            Mark as Available
                           </Button>
                         </div>
                       </div>
@@ -189,7 +326,7 @@ export function RoomDetails({ roomId }: RoomDetailsProps) {
                             This room is currently available and can be booked.
                           </p>
                           <Button size="sm" className="mt-2" asChild>
-                            <Link to="/bookings/new">
+                            <Link to={`/bookings/new?roomId=${room.id}`}>
                               Create Booking
                             </Link>
                           </Button>
@@ -210,13 +347,20 @@ export function RoomDetails({ roomId }: RoomDetailsProps) {
               <CardDescription>Common tasks for this room</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button className="w-full justify-start" size="lg">
+              <Button 
+                className="w-full justify-start" 
+                size="lg"
+                onClick={() => handleStatusChange('cleaning')}
+                disabled={room.status === 'cleaning'}
+              >
                 <Loader className="h-4 w-4 mr-2" />
-                Update Cleaning Status
+                Mark as Cleaning
               </Button>
-              <Button className="w-full justify-start" size="lg">
-                <CalendarClock className="h-4 w-4 mr-2" />
-                Check Availability
+              <Button className="w-full justify-start" size="lg" asChild>
+                <Link to="/availability">
+                  <CalendarClock className="h-4 w-4 mr-2" />
+                  Check Availability
+                </Link>
               </Button>
               <Button className="w-full justify-start" variant="outline" size="lg" asChild>
                 <Link to={`/rooms/edit/${room.id}`}>
@@ -224,6 +368,17 @@ export function RoomDetails({ roomId }: RoomDetailsProps) {
                   Update Room Details
                 </Link>
               </Button>
+              {isAdmin && (
+                <Button 
+                  className="w-full justify-start text-red-600 hover:text-red-700" 
+                  variant="outline" 
+                  size="lg"
+                  onClick={handleDeleteClick}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Room
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -277,6 +432,28 @@ export function RoomDetails({ roomId }: RoomDetailsProps) {
           </CardContent>
         </Tabs>
       </Card>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to delete this room?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the room 
+              and remove the data from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
